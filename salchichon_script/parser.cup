@@ -9,6 +9,7 @@ parser code
 {:
     public class NodoToken{
         String tipo;
+        String id;
         String valor;
         String linea;
         String columna;
@@ -21,6 +22,13 @@ parser code
 
         public void setTipo(String tipo) {
             this.tipo = tipo;
+        }
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
         }
 
         public String getValor() {
@@ -50,6 +58,7 @@ parser code
         public String toString() {
             return "NodoToken{" +
                 "tipo='" + tipo + '\'' +
+                "id = "+ id + '\'' +
                 ", valor='" + valor + '\'' +
                 ", linea='" + linea + '\'' +
                 ", columna='" + columna + '\'' +
@@ -61,7 +70,7 @@ parser code
     String currentHash;
     String globalHash = "global1TS";
 
-    public parser() {
+    public void inicarTS() {
         listaTablasSimbolos.put(globalHash, new ArrayList<>());
         currentHash = globalHash;
     }
@@ -89,11 +98,11 @@ parser code
     public NodoToken buscarID(String id){
         if(listaTablasSimbolos.containsKey(currentHash)){ //BUSCAMOS EN LA TABLA DE SIMBOLOS ACTUAL A VER SI EXISTE EL ID
             for(NodoToken tok : listaTablasSimbolos.get(currentHash)){
-                if(tok.getValor().equals(id)) return tok;
+                if(tok.getId().equals(id)) return tok;
             }
         }
         for(NodoToken tok : listaTablasSimbolos.get(globalHash)){ //BUSCAMOS EN LA TABLA DE SIMBOLOS GLOBAL A VER SI EXISTE EL ID
-            if(tok.getValor().equals(id)) return tok;
+            if(tok.getId().equals(id)) return tok;
         }
         return null;
     }
@@ -186,8 +195,9 @@ precedence right NOT;
 start with program; //EMPEZAMOS CON LA PRODUCCIÓN PROGRAM
 
 
-program ::= {:  System.out.println("generando tabla de símbolos");
-                listaTablasSimbolos.put(globalHash, new ArrayList<NodoToken>());
+program ::= {:  
+                System.out.println("generando tabla de símbolos");
+                inicarTS();
             :}
                 lista_global main_funcion lista_global //PROGRAM ESTÁ CONSTITUIDO DE UNALISTA GLOBAL, DE FUNCION MAIN Y DE LISTA GLOBAL
                                                               //ESTO NOS PERMITE COLOCAR EL MAIN EN CUALQUIER PARTE DEL CODIGO
@@ -212,15 +222,15 @@ main_funcion ::= INIT VOID MAIN PAR_A PAR_C bloque  //LA FUNCION MAIN ESTA COMPU
 
 
 // ======== DECLARACIÓN DE VARIABLES ========
-tipo ::= INT1
-    | STR1
-    | FLOAT1
-    | BOOL1
-    | CHAR1
+tipo ::= INT1 {: RESULT = "int"; :}
+    | STR1 {: RESULT = "string"; :}
+    | FLOAT1 {: RESULT = "float"; :}
+    | BOOL1 {: RESULT = "boolean"; :}
+    | CHAR1 {: RESULT = "char"; :}
     ;
 
 tipo_funcion ::= tipo
-    | VOID
+    | VOID {: RESULT = "void"; :}
     ;
 
 //+++++++++++++++++++++BLOQUE++++++++++++++++++++++++++++++++++
@@ -272,7 +282,23 @@ leer ::= LEER PAR_A PAR_C | LEER PAR_A ID PAR_C ;
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
-funcion ::= tipo_funcion ID PAR_A parametros_opt PAR_C bloque
+funcion ::= tipo_funcion ID:nombreFun PAR_A parametros_opt:params PAR_C
+            {:
+                NodoToken func = new NodoToken();
+                func.setId(nombreFun.toString());
+                func.setLinea(String.valueOf(lastLine));
+                func.setColumna(String.valueOf(lastColumn));
+                listaTablasSimbolos.get(globalHash).add(func);
+                currentHash = "TS_FUNC_" + nombreFun.toString();
+                listaTablasSimbolos.put(currentHash, new ArrayList<>());
+
+
+            :}
+             bloque
+             {:
+                currentHash = globalHash;
+                System.out.println(">> [TS] Regresando a tabla global.");
+            :}
           | tipo_funcion ID PAR_A parametros_opt PAR_C error
           ;
 
