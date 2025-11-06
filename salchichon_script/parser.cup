@@ -1,6 +1,8 @@
 package salchichon_script;
 
 import java_cup.runtime.Symbol;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 // PARSER
 parser code
@@ -55,18 +57,45 @@ parser code
         }
     }
 
-    HashMap<String, ArrayList<NodoToken>> listaTablasSimbolos = new HashMap<String, ArrayList<NodoToken>>
+    HashMap<String, ArrayList<NodoToken>> listaTablasSimbolos = new HashMap<>();
     String currentHash;
     String globalHash = "global1TS";
+
+    public parser() {
+        listaTablasSimbolos.put(globalHash, new ArrayList<>());
+        currentHash = globalHash;
+    }
 
     public void imprimirTablasSimbolos(){
         for(String key: listaTablasSimbolos.keySet()){
             System.out.println("Tabla de simbolo : " + key);
             System.out.println("Valores : ");
             for(NodoToken item : listaTablasSimbolos.get(key)){
-                System.out.println(item.toString())
+                System.out.println(item.toString());
             }
         }
+    }
+    public String getTipo(ArrayList<NodoToken> tabla, String id){
+        String tipo = "";
+        for(NodoToken token : tabla){
+            if(id.equals(token.getValor())){
+                tipo = token.getTipo();
+            }
+        }
+        System.out.println("tipo: "+tipo);
+        return tipo;
+    }
+
+    public NodoToken buscarID(String id){
+        if(listaTablasSimbolos.containsKey(currentHash)){ //BUSCAMOS EN LA TABLA DE SIMBOLOS ACTUAL A VER SI EXISTE EL ID
+            for(NodoToken tok : listaTablasSimbolos.get(currentHash)){
+                if(tok.getValor().equals(id)) return tok;
+            }
+        }
+        for(NodoToken tok : listaTablasSimbolos.get(globalHash)){ //BUSCAMOS EN LA TABLA DE SIMBOLOS GLOBAL A VER SI EXISTE EL ID
+            if(tok.getValor().equals(id)) return tok;
+        }
+        return null;
     }
 
     public boolean tieneErrores = false;
@@ -157,15 +186,23 @@ precedence right NOT;
 start with program; //EMPEZAMOS CON LA PRODUCCIÓN PROGRAM
 
 
-program ::= lista_global main_funcion lista_global //PROGRAM ESTÁ CONSTITUIDO DE UNALISTA GLOBAL, DE FUNCION MAIN Y DE LISTA GLOBAL
-    ;                                              //ESTO NOS PERMITE COLOCAR EL MAIN EN CUALQUIER PARTE DEL CODIGO
-    
+program ::= {:  System.out.println("generando tabla de símbolos");
+                listaTablasSimbolos.put(globalHash, new ArrayList<NodoToken>());
+            :}
+                lista_global main_funcion lista_global //PROGRAM ESTÁ CONSTITUIDO DE UNALISTA GLOBAL, DE FUNCION MAIN Y DE LISTA GLOBAL
+                                                              //ESTO NOS PERMITE COLOCAR EL MAIN EN CUALQUIER PARTE DEL CODIGO
+            {:
+                imprimirTablasSimbolos();
+                System.out.println("fin de ejecución");
+            :}
+            ;
 lista_global ::= elemento_global lista_global //UNA LISTA GLOBAL PUEDE SER UN ELEMENTO GLOBAL SEGUIDO DE UNA LISTA GLOBAL O PUEDE SER NADA
     | /* vacío */
     ;
 
 elemento_global ::= sentencia //UN ELEMENTO GLOBAL PUEDE SER UNA SENTENCIA O UNA FUNCION
     | funcion
+    {: System.out.println("Fin variables globales"); :}
     ;
 
 main_funcion ::= INIT VOID MAIN PAR_A PAR_C bloque  //LA FUNCION MAIN ESTA COMPUESTA POR LA PALABRA RESERVADA INIT SEGUIDO DE VOID SEGUIDO DE LA PALABRA RESERVADA MAIN, PARENTESIS Y FINALMENTE BLOQUE
