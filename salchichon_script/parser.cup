@@ -76,7 +76,7 @@ non terminal expresion;
 non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion; 
+non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion, arreglo_char; 
 
 // PRECEDENCIA
 precedence left OR;
@@ -189,22 +189,26 @@ parametro ::= tipo ID; //UN PARAMETRO ES UN TIPO SEGUIDO DE UN ID
 declaracion ::= LET tipo ID asignacion_dec
     ;
 
+arreglo_char ::= COR_A lista_char COR_C
+
 // ASIGNACION DE VARIABLES
 asignacion_dec ::= ASIGN expresion //SE PUEDE HACER LA ASIGNACION DE UNA EXPRESION O TAMBIEN
     | COR_A ENTERO COR_C ASIGN COR_A lista_elementos_arreglo_entero COR_C //PODEMOS DECLARAR UN ARREGLO CON ASIGNACION
-    | COR_A ENTERO COR_C ASIGN CADENA_CHAR
+    | COR_A ENTERO COR_C ASIGN arreglo_char
     | /* ε */
     ;
 
+
+
 lista_char ::=    CHAR
-                | CHAR lista_char
+                | lista_char COMA CHAR
                 ;
 
 asignacion ::= ID diferente_asignacion// UNA ASIGNACION SENCILLA
     ;
 diferente_asignacion ::= | ASIGN expresion
                          | COR_A ENTERO COR_C ASIGN ENTERO
-                         | COR_A ENTERO COR_C ASIGN CADENA_CHAR;
+                         | COR_A ENTERO COR_C ASIGN arreglo_char;
 
 // EXPRESIONES
 expresion ::= expresion AND expresion //AQUI CONTEMPLAMOS LAS OPERACIONES LOGICAS
