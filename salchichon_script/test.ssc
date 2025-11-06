@@ -45,5 +45,5 @@ void funcion2 єint identificadorэ¿
     let int arreglo[5] = [2]$
     arreglo[2] = 255$
 
-    let char arregloChar[5] = 'esto es un arreglo'$
+    let char arregloChar[5] = ['e','s','a']$
 ?$

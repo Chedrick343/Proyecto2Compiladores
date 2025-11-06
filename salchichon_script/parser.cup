@@ -189,7 +189,7 @@ parametro ::= tipo ID; //UN PARAMETRO ES UN TIPO SEGUIDO DE UN ID
 declaracion ::= LET tipo ID asignacion_dec
     ;
 
-arreglo_char ::= COR_A lista_char COR_C
+arreglo_char ::= COR_A lista_char COR_C;
 
 // ASIGNACION DE VARIABLES
 asignacion_dec ::= ASIGN expresion //SE PUEDE HACER LA ASIGNACION DE UNA EXPRESION O TAMBIEN
