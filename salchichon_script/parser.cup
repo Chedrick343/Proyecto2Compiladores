@@ -44,11 +44,30 @@ parser code
         public void setColumna(String columna) {
             this.columna = columna;
         }
+        @Override
+        public String toString() {
+            return "NodoToken{" +
+                "tipo='" + tipo + '\'' +
+                ", valor='" + valor + '\'' +
+                ", linea='" + linea + '\'' +
+                ", columna='" + columna + '\'' +
+            '}';
+        }
     }
 
     HashMap<String, ArrayList<NodoToken>> listaTablasSimbolos = new HashMap<String, ArrayList<NodoToken>>
     String currentHash;
-    
+    String globalHash = "global1TS";
+
+    public void imprimirTablasSimbolos(){
+        for(String key: listaTablasSimbolos.keySet()){
+            System.out.println("Tabla de simbolo : " + key);
+            System.out.println("Valores : ");
+            for(NodoToken item : listaTablasSimbolos.get(key)){
+                System.out.println(item.toString())
+            }
+        }
+    }
 
     public boolean tieneErrores = false;
 
