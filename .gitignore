@@ -1,0 +1,28 @@
+# ========================================
+# Archivos generados automáticamente por JFlex y CUP
+# ========================================
+/Parser.java
+/Sym.java
+salchichon_script/Lexer.java
+salchichon_script/parser.java
+salchichon_script/Parser.java
+salchichon_script/sym.java
+salchichon_script/Sym.java
+
+# Archivos compilados de Java
+*.class
+
+# Archivos temporales o de IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+out/
+bin/
+
+# Archivos de respaldo o swap
+*~
+*.swp
+*.bak
+*.log
+tokens.txt

@@ -1,0 +1,297 @@
+package salchichon_script;
+
+import java_cup.runtime.Symbol;
+
+// PARSER
+parser code
+{:
+    public boolean tieneErrores = false;
+
+    // Para recordar última posición válida
+    private int lastLine = 1;
+    private int lastColumn = 1;
+
+    // Guardar última posición válida después de cada token leído
+    @Override
+    public Symbol scan() throws Exception {
+        Symbol sym = super.scan();
+        if (sym != null) {
+            if (sym.left >= 0) lastLine = sym.left + 1;
+            if (sym.right >= 0) lastColumn = sym.right + 1;
+        }
+        return sym;
+    }
+
+    // Errores recuperables
+    @Override
+    public void syntax_error(Symbol s) {
+        tieneErrores = true; 
+        String lexema = (s != null && s.value != null) ? s.value.toString() : "EOF o símbolo desconocido";
+        int linea = (s != null && s.left >= 0) ? s.left + 1 : lastLine;
+        int columna = (s != null && s.right >= 0) ? s.right + 1 : lastColumn;
+
+        System.err.printf("\u001B[31m XXX Error sintáctico recuperable XXX :       Token '%s' en línea %d, columna %d.\u001B[0m %n", lexema, linea, columna);
+    }
+
+    // Errores no recuperables
+    @Override
+    public void unrecovered_syntax_error(Symbol s) throws Exception {
+        tieneErrores = true; 
+        String lexema = (s != null && s.value != null) ? s.value.toString() : "EOF o símbolo desconocido";
+        int linea = (s != null && s.left >= 0) ? s.left + 1 : lastLine;
+        int columna = (s != null && s.right >= 0) ? s.right + 1 : lastColumn;
+
+        System.err.printf("\u001B[31m     XXX Error sintáctico crítico XXX :       Token '%s' en línea %d, columna %d. \u001B[0m %n", lexema, linea, columna);
+    }
+:}
+
+action code
+{:
+    // Codigo de usuario - fase de analisis
+    String tmp="";
+:}
+
+// TERMINALES
+terminal PAR_A, PAR_C, BLO_A, BLO_C, COMA, FLECHA, FIN_E, ASIGN, COR_A, COR_C, COMILLA_SIMP, CADENA_CHAR;
+terminal MAS, MENOS, POR, DIV, DIV_ENT, MOD, POT;
+terminal AND, OR, NOT;
+terminal INC, DEC;
+terminal MAYOR, MENOR, MAY_IGU, MEN_IGU, IGUAL, DIF;
+terminal INT1, CHAR1, STR1, FLOAT1, BOOL1, LET, VOID, TRUE1, FALSE1, DECIDE;
+terminal OF, ELSE, END, LOOP, EXIT, WHEN, FOR1, STEP, TO, DOWNTO, DO;
+terminal RETURN, BREAK;
+terminal INIT;
+
+terminal ENTERO, FLOTANTE, CHAR, ID;
+terminal IMPRIMIR, LEER, MAIN, CADENA;
+
+// NO TERMINALES
+non terminal Object program;
+non terminal main_funcion, elemento_global, lista_global;
+non terminal tipo, tipo_funcion, declaracion;
+non terminal bloque, lista_sentencias, lista_sentencias_opt, sentencia, expr_opc, llamada_funcion, parametros_llamada, imprimir, leer;
+non terminal funcion, parametros_opt, lista_parametros, parametro;
+non terminal asignacion, asignacion_dec;
+non terminal expresion;
+non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
+non terminal op_rel, incrementar, decrementar;
+non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
+non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion; 
+
+// PRECEDENCIA
+precedence left OR;
+precedence left AND;
+precedence left IGUAL, DIF;
+precedence left MAYOR, MENOR, MAY_IGU, MEN_IGU;
+precedence left MAS, MENOS;
+precedence left POR, DIV, DIV_ENT, MOD;
+precedence right POT;
+precedence right NOT;
+
+// PRODUCCIONES
+
+start with program; //EMPEZAMOS CON LA PRODUCCIÓN PROGRAM
+
+
+program ::= lista_global main_funcion lista_global //PROGRAM ESTÁ CONSTITUIDO DE UNALISTA GLOBAL, DE FUNCION MAIN Y DE LISTA GLOBAL
+    ;                                              //ESTO NOS PERMITE COLOCAR EL MAIN EN CUALQUIER PARTE DEL CODIGO
+    
+lista_global ::= elemento_global lista_global //UNA LISTA GLOBAL PUEDE SER UN ELEMENTO GLOBAL SEGUIDO DE UNA LISTA GLOBAL O PUEDE SER NADA
+    | /* vacío */
+    ;
+
+elemento_global ::= sentencia //UN ELEMENTO GLOBAL PUEDE SER UNA SENTENCIA O UNA FUNCION
+    | funcion
+    ;
+
+main_funcion ::= INIT VOID MAIN PAR_A PAR_C bloque  //LA FUNCION MAIN ESTA COMPUESTA POR LA PALABRA RESERVADA INIT SEGUIDO DE VOID SEGUIDO DE LA PALABRA RESERVADA MAIN, PARENTESIS Y FINALMENTE BLOQUE
+    | INIT VOID MAIN bloque                         //TAMBIEN PUEDE SER SIN PARENTESIS LA FUNCION MAIN
+    | INIT VOID MAIN error
+    ;
+
+
+// ======== DECLARACIÓN DE VARIABLES ========
+tipo ::= INT1
+    | STR1
+    | FLOAT1
+    | BOOL1
+    | CHAR1
+    ;
+
+tipo_funcion ::= tipo
+    | VOID
+    ;
+
+//+++++++++++++++++++++BLOQUE++++++++++++++++++++++++++++++++++
+
+bloque ::= BLO_A lista_sentencias_opt BLO_C
+         | BLO_A error BLO_C
+         ;
+
+lista_sentencias_opt ::= /* vacío */
+                     | lista_sentencias
+                     ;
+
+lista_sentencias ::= sentencia
+                  | lista_sentencias sentencia
+                  ;
+sentencia ::= declaracion FIN_E //AQUI DECLARAMOS QUE LAS SENTENCIAS SON TODOS AQUELLOS ELEMENTOS QUE SE PUEDEN UTILIZAR PARA GENERAR ALGUNA ESTRUCTURA CON SENTIDO
+    | asignacion FIN_E
+    | llamada_funcion FIN_E
+    | imprimir FIN_E
+    | leer FIN_E
+    | RETURN expr_opc FIN_E
+    | BREAK FIN_E
+    | incrementar FIN_E
+    | decrementar FIN_E
+    | condicional FIN_E
+    | bucle_loop 
+    | bucle_for
+    | error FIN_E
+    ;
+
+incrementar ::= ID INC;
+decrementar ::= ID DEC;
+
+expr_opc ::=
+      expresion
+    | /* ε */
+    ;
+
+
+llamada_funcion ::= ID PAR_A parametros_llamada PAR_C;
+
+parametros_llamada ::= expresion
+                        | expresion COMA parametros_llamada
+                        |
+                        ;
+
+imprimir ::= IMPRIMIR PAR_A expresion PAR_C;
+leer ::= LEER PAR_A PAR_C | LEER PAR_A ID PAR_C ;
+
+//+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
+
+funcion ::= tipo_funcion ID PAR_A parametros_opt PAR_C bloque
+          | tipo_funcion ID PAR_A parametros_opt PAR_C error
+          ;
+
+parametros_opt ::= lista_parametros
+                 | // VACIO
+                 ;
+
+lista_parametros ::= parametro //LISTA DE PARAMETROS ES UN PARAMETRO O LISTA DE PARAMETROS SEGUIDO DE UNA COMA Y UN PARAMETRO
+                  | lista_parametros COMA parametro
+                  ;
+
+parametro ::= tipo ID; //UN PARAMETRO ES UN TIPO SEGUIDO DE UN ID
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+declaracion ::= LET tipo ID asignacion_dec
+    ;
+
+// ASIGNACION DE VARIABLES
+asignacion_dec ::= ASIGN expresion //SE PUEDE HACER LA ASIGNACION DE UNA EXPRESION O TAMBIEN
+    | COR_A ENTERO COR_C ASIGN COR_A lista_elementos_arreglo_entero COR_C //PODEMOS DECLARAR UN ARREGLO CON ASIGNACION
+    | COR_A ENTERO COR_C ASIGN CADENA_CHAR
+    | /* ε */
+    ;
+
+lista_char ::=    CHAR
+                | CHAR lista_char
+                ;
+
+asignacion ::= ID diferente_asignacion// UNA ASIGNACION SENCILLA
+    ;
+diferente_asignacion ::= | ASIGN expresion
+                         | COR_A ENTERO COR_C ASIGN ENTERO
+                         | COR_A ENTERO COR_C ASIGN CADENA_CHAR;
+
+// EXPRESIONES
+expresion ::= expresion AND expresion //AQUI CONTEMPLAMOS LAS OPERACIONES LOGICAS
+    | expresion OR expresion
+    | NOT expresion
+    | expresion_arit op_rel expresion
+    | expresion_arit
+    ;
+
+
+// EXPRESIONES ARITMETICAS
+expresion_arit ::= expresion_arit MAS termino //UNA EXPRESIÓN ARITMETICA ES LA SUMA DE UNA EXPRESION ARITMETICA Y UN TERMINO O LA RESTA DE ESTOS O PUEDE SER UN PRODUCTO
+    | expresion_arit MENOS termino //SE HACE DE ESTA FORMA PARA PODER MANTENER EL ORDE DE LAS OPERACIONES
+    | termino
+    ;
+
+termino ::= factor POR factor //UN TERMINO PUEDE SER UN FACTOR POR UN FACTOR O DIVICION ENTERA O MODULO, DE ESTA FORMA RESOLVEMOS PRIMERO LAS DE MÁS IMPORTANCIA
+    | factor DIV factor
+    | factor DIV_ENT factor
+    | factor MOD factor
+    | factor
+    ;
+
+factor ::= potencia POT potencia //AQUI USAMOS RECURSIVIDAD Y DECIMOS QUE UN FACTOR PUEDE SER UNA POTENCIA Y A SU VEZ UNA POTENCIA PUEDE SER UN OPERANDO O PUEDE SER UNA POTENCIA A LA POTENCIA QUE TERMINA SIENDO UN OPERANDO
+    | potencia
+    ;
+
+potencia ::= PAR_A expresion PAR_C //UNA POTENCIA PUEDE SER UNA EXPRESION DENTRO DE PARENTESIS O UN OPERANDO
+    | operando
+    ;
+//UN OPERANDO ES LA FORMA MÁS SENCILLA DE UNA OPERACIÓN
+operando ::= ENTERO
+    | FLOTANTE
+    | TRUE1
+    | FALSE1
+    | CADENA_CHAR
+    | CADENA
+    | ID 
+    | llamada_funcion
+    | elem_arr
+    | MENOS operando
+    | incrementar
+    | decrementar
+    ;
+
+// OPERADORES RELACIONALES
+op_rel ::= MAYOR
+    | MENOR
+    | MAY_IGU
+    | MEN_IGU
+    | IGUAL
+    | DIF
+    ;
+
+// ESTRUCTURAS DE CONTROL
+
+condicional ::= DECIDE OF lista_casos cond_else_opt END DECIDE; //PRODUCCION DE CONDICIONAL DONDE RECIBE UNA LISTA DE CASOS UN ELSE CONDICIONAL Y EL END DECIDE
+
+lista_casos ::= caso
+              | caso lista_casos // SE PUEDE UN SOLO CASO O UNA LISTA DE CASOS
+              ;
+
+caso ::= PAR_A expresion PAR_C FLECHA bloque; //LOS CASOS QUE PUEDEN ESTAR EN LA CONDICIONAL
+
+cond_else_opt ::= /* vacío */
+                 | ELSE FLECHA bloque // PODEMOS PONER ELSE O PODEMOS DEJARLO VACIO
+                 ;
+
+bucle_loop ::= LOOP lista_sentencias EXIT WHEN expresion FIN_E END LOOP FIN_E; //EL BUCLE LOOP ESTÁ HECHO DE LA PALABRA RESERVADA LOOP SEGUIDO DE LA LISTA DE SENTENCIAS, EXIT WHEN, LA EXPRESION FINAL, Y EXIT LOOP SEGUIDO DEL FINAL DE EXPRESION
+
+bucle_for ::= FOR1 asignacion step ENTERO direccion expresion DO bloque; //UN BUCLE FOR ESTA HECHO DE PALABRA RESERVADA FOR, PARENTESIS, LA ASIGNACION, PARENTESIS, STEP, LA DIRECCION DEL CONTADOR, A EXPRESION Y LA EL BLOQUE
+
+
+step ::= /* vacío */ 
+       | STEP //PALABRA RESERVADA STEP QUE SE NOS SOLICITA AGREGAR EN LA GRAMATICA
+       ;
+
+direccion ::= TO //DIRECCIÓN EN LA QUE VA A CORRER EL CONTADOR
+            | DOWNTO
+            ;
+
+//++++++++++++++++++++++++++++++++ARREGLOS+++++++++++++++++++++++++++++
+
+
+lista_elementos_arreglo_entero ::=    ENTERO
+                                    | ENTERO COMA lista_elementos_arreglo_entero
+                                    ;
+
+
+

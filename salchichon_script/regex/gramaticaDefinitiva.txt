@@ -1,0 +1,204 @@
+<program> ::= (<globalStatement>)* <mainFunction> (<globalStatement>)*
+
+<globalStatement> ::= <functionDeclaration> | <variableDeclaration> | <comment>
+
+<mainFunction> ::= "void" "main" <abreParentesis> <cierraParentesis> <bloque> "$"
+
+// ========== TIPOS BÁSICOS ==========
+<digitoCero> ::= [0-9]
+<digito> ::= [1-9]
+<simboloMenos> ::= "-"
+<cero> ::= "0" 
+<definicionEntero> ::= <cero> | <simboloMenos>? <digito> <digitoCero>*
+<definicionNatural> ::= <digito> <digitoCero>*
+<punto> ::= "."
+<definicionFlotante> ::= <definicionEntero> <punto> <definicionNatural> | <cero> <punto> <cero> | <simboloMenos>? <cero> <punto> <cero>* <definicionNatural>+ | <definicionEntero> <punto> <cero>* <definicionNatural>
+
+<letra> ::= [a-z] | [A-Z]
+<oracion> ::= <letra>+
+<simboloGuionBajo> ::= "_"
+<identificador> ::= <simboloGuionBajo>? <letra> (<letra> | <digitoCero> | <simboloGuionBajo>)*
+
+<comilla> ::= "\""
+<comillaSimple> ::= "'"
+<definicionChar> ::= <comillaSimple> (<letra> | <expresionesASCII> | <digitoCero>) <comillaSimple>
+<definicionString> ::= <comilla> (<letra> | <expresionesASCII> | <digitoCero>)* <comilla>
+
+<palabraReservadaTrue> ::= "True"
+<palabraReservadaFalse> ::= "False"
+
+// ========== TIPOS DE DATOS ==========
+<palabraReservadaTipoEntero> ::= "int"
+<palabraReservadaTipoString> ::= "String"
+<palabraReservadaTipoFlotante> ::= "float"
+<palabraReservadaTipoBooleano> ::= "boolean"
+<palabraReservadaTipoChar> ::= "char"
+
+<tipo> ::= <palabraReservadaTipoBooleano> | <palabraReservadaTipoChar> 
+          | <palabraReservadaTipoEntero> | <palabraReservadaTipoFlotante> 
+          | <palabraReservadaTipoString>
+
+// ========== COMENTARIOS ==========
+<comentario> ::= <comentarioUnaLinea> | <comentarioMultiLinea>
+<comentarioUnaLinea> ::= "|" (<letra> | <digitoCero> | <expresionesASCII>)* "\n"?
+<comentarioMultiLinea> ::= "¡" (<letra> | <digitoCero> | <expresionesASCII> | "\n")* "!"
+
+// ========== EXPRESIONES ARITMÉTICAS ==========
+<expresion> ::= <termino> ( ("+" | "-") <termino> )*
+
+<termino> ::= <factor> ( ("*" | "/" | "//" | "%") <factor> )*
+
+<factor> ::= <potencia> ( "^" <potencia> )*
+
+<potencia> ::= <operando> | <abreParentesis> <expresion> <cierraParentesis>
+
+<operando> ::= <definicionEntero>
+              | <definicionFlotante>
+              | <palabraReservadaTrue>
+              | <palabraReservadaFalse>
+              | <definicionChar>
+              | <definicionString>
+              | <identificador>
+              | <llamadaFuncion>
+              | <elementoArreglo>
+              | <simboloMenos> <operando>
+              | <incremento>
+              | <decremento>
+
+<incremento> ::= <identificador> "++"
+<decremento> ::= <identificador> "--"
+
+// ========== EXPRESIONES RELACIONALES Y LÓGICAS ==========
+<operadorRelacional> ::= "<" | "<=" | ">" | ">=" | "==" | "!="
+
+<expresionRelacional> ::= <expresion> <operadorRelacional> <expresion>
+                        | <expresionBooleana> ("==" | "!=") <expresionBooleana>
+
+<simboloConjuncion> ::= "@"
+<simboloDisyuncion> ::= "~"
+<simboloNegacion> ::= "'Σ'"
+
+<expresionBooleana> ::= <disyuncion>
+
+<disyuncion> ::= <conjuncion> ( <simboloDisyuncion> <conjuncion> )*
+
+<conjuncion> ::= <negacion> ( <simboloConjuncion> <negacion> )*
+
+<negacion> ::= <simboloNegacion> <negacion> | <primariaBool>
+
+<primariaBool> ::= <palabraReservadaTrue>
+                 | <palabraReservadaFalse>
+                 | <identificador>
+                 | <llamadaFuncion>
+                 | <abreParentesis> <expresionBooleana> <cierraParentesis>
+                 | <expresionRelacional>
+
+// ========== DECLARACIONES DE VARIABLES ==========
+<palabraReservadaLet> ::= "let"
+<simboloIgual> ::= "="
+
+<variableDeclaration> ::= <palabraReservadaLet> <tipo> <identificador> (<simboloIgual> <expresion>)? "$"
+
+<declaracionEntero> ::= <palabraReservadaLet> <palabraReservadaTipoEntero> <identificador> (<simboloIgual> (<definicionEntero> | <identificador>))? "$"
+
+<declaracionFlotante> ::= <palabraReservadaLet> <palabraReservadaTipoFlotante> <identificador> (<simboloIgual> (<definicionFlotante> | <identificador>))? "$"
+
+<declaracionBooleano> ::= <palabraReservadaLet> <palabraReservadaTipoBooleano> <identificador> (<simboloIgual> (<palabraReservadaTrue> | <palabraReservadaFalse> | <identificador>))? "$"
+
+<declaracionCaracter> ::= <palabraReservadaLet> <palabraReservadaTipoChar> <identificador> (<simboloIgual> <definicionChar>)? "$"
+
+<declaracionString> ::= <palabraReservadaLet> <palabraReservadaTipoString> <identificador> (<simboloIgual> <definicionString>)? "$"
+
+// ========== ARREGLOS ==========
+<abreCorchete> ::= "¿"
+<cierraCorchete> ::= "?"
+
+<declaracionArregloEntero> ::= <palabraReservadaLet> <palabraReservadaTipoEntero> <abreCorchete> <definicionNatural> <cierraCorchete> <identificador> (<simboloIgual> <abreCorchete> <listaEnteros> <cierraCorchete>)? "$"
+
+<declaracionArregloChar> ::= <palabraReservadaLet> <palabraReservadaTipoChar> <abreCorchete> <definicionNatural> <cierraCorchete> <identificador> (<simboloIgual> <abreCorchete> <listaChars> <cierraCorchete>)? "$"
+
+<listaEnteros> ::= <definicionEntero> ( "," <definicionEntero> )*
+<listaChars> ::= <definicionChar> ( "," <definicionChar> )*
+
+<elementoArreglo> ::= <identificador> <abreCorchete> <expresion> <cierraCorchete>
+
+<asignacionArreglo> ::= <elementoArreglo> <simboloIgual> <expresion> "$"
+
+// ========== ASIGNACIONES ==========
+<asignacion> ::= <identificador> <simboloIgual> <expresion> "$"
+
+<asignacionExpresion> ::= <expresion> "$"
+
+// ========== ESTRUCTURAS DE CONTROL ==========
+<condicional> ::= "decide of" "\n"?
+                 ( <abreParentesis> <expresionBooleana> <cierraParentesis> "->" <bloque> )+
+                 ( "else" "->" <bloque> )?
+                 "end decide" "$"
+
+<bucle> ::= "loop" "\n"?
+           <listaSentencias>
+           "exit when" <expresionBooleana> "$"
+           "end loop" "$"
+
+<bloqueFor> ::= "for" <abreParentesis>? <asignacion> <cierraParentesis>? "step" <definicionNatural> ("to" | "downto") <expresion> "do" <bloque>
+
+// ========== FUNCIONES ==========
+<functionDeclaration> ::= (<tipo> | "void") <identificador> <abreParentesis> <listaParametros>? <cierraParentesis> <bloque> "$"
+
+<listaParametros> ::= <parametro> ( "," <parametro> )*
+<parametro> ::= <tipo> <identificador>
+
+<llamadaFuncion> ::= <identificador> <abreParentesis> <listaArgumentos>? <cierraParentesis>
+<listaArgumentos> ::= <expresion> ( "," <expresion> )*
+
+// ========== ENTRADA/SALIDA ==========
+<palabraReservadaInput> ::= "input"
+<palabraReservadaOutput> ::= "output"
+
+<leerEntrada> ::= <palabraReservadaInput> <identificador> "$"
+<imprimirElementos> ::= <palabraReservadaOutput> <abreParentesis> <expresion> ( "," <expresion> )* <cierraParentesis> "$"
+
+// ========== SENTENCIAS ESPECIALES ==========
+<retorno> ::= "return" <expresion>? "$"
+<break> ::= "break" "$"
+
+// ========== BLOQUES Y SENTENCIAS ==========
+<abrirBloque> ::= "¿"
+<cerrarBloque> ::= "?"
+<finalExpresion> ::= "$"
+
+<bloque> ::= <abrirBloque> "\n"? <listaSentencias> "\n"? <cerrarBloque>
+
+<sentencia> ::= <variableDeclaration>
+               | <asignacion>
+               | <asignacionArreglo>
+               | <asignacionExpresion>
+               | <condicional>
+               | <bucle>
+               | <bloqueFor>
+               | <leerEntrada>
+               | <imprimirElementos>
+               | <retorno>
+               | <break>
+               | <incremento> "$"
+               | <decremento> "$"
+               | <llamadaFuncion> "$"
+
+<listaSentencias> ::= (<sentencia> | <comentario>) ("\n"+ (<sentencia> | <comentario>))*
+
+// ========== CARACTERES ESPECIALES ==========
+<expresionesASCII> ::= <nonPrintable>
+                     | " " | "!" | "\"" | "#" | "$" | "%" | "&" | "(" | ")" 
+                     | "*" | "+" | "," | "-" | "." | "/" 
+                     | ":" | ";" | "<" | "=" | ">" | "?" 
+                     | "@" 
+                     | "[" | "\\" | "]" | "^" | "_" | "`" 
+                     | "{" | "|" | "}" | "~"
+
+<nonPrintable> ::= "<NUL>" | "<SOH>" | "<STX>" | "<ETX>" | "<EOT>" 
+                 | "<ENQ>" | "<ACK>" | "<BEL>" | "<BS>"  | "<TAB>" 
+                 | "<LF>"  | "<VT>"  | "<FF>"  | "<CR>"  | "<SO>" 
+                 | "<SI>"  | "<DLE>" | "<DC1>" | "<DC2>" | "<DC3>" 
+                 | "<DC4>" | "<NAK>" | "<SYN>" | "<ETB>" | "<CAN>" 
+                 | "<EM>"  | "<SUB>" | "<ESC>" | "<FS>"  | "<GS>" 
+                 | "<RS>"  | "<US>"  | "<DEL>"

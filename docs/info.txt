@@ -1,0 +1,6 @@
+Nombre del curso: compiladores e intérpretes.
+Numero de semestre y año lectivo: 2025 semestre 2.
+Estudiantes: Eyden Su Díaz 2023025837, Chedrick Uzaga López 2021144175.
+Proyecto: proyecto 1.
+Fecha de entrega: Lunes 6 de octubre.
+Estatus de la entrega: EXCELENTE.

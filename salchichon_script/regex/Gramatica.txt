@@ -1,0 +1,108 @@
+<program> ::= (<funcion> <finalExpresion> | <sentencia>)* <main> (<funcion> <finalExpresion> | <sentencia>)*
+
+<main> ::= "void" "main" <bloque> <finalExpresion>
+
+<funcion> ::= (<tipo> | "void") <identificadorFuncion> <bloque>
+
+<listaFunciones> ::= <funcion> <finalExpresion> | <funcion> <finalExpresion> <listaFunciones> | ε
+
+<declaracion> ::= <tipo> <identificador>
+
+<creacion> ::= <palabraReservadaLet> <declaracion> (<simboloIgual> <expresion>)?
+
+<asignacion> ::= <identificador> <simboloIgual> <expresion>
+
+<asignacionDefinicion> ::= <identificador> <simboloIgual> <definiciones>
+
+<asignacionEntreIdentificadores> ::= <identificador> <simboloIgual> <identificador>
+
+<declaracionEntero> ::= <palabraReservadaLet> <palabraReservadaTipoEntero> <identificador> (<simboloIgual> (<definicionEntero> | <identificador>))?
+<declaracionFlotante> ::= <palabraReservadaLet> <palabraReservadaTipoFlotante> <identificador> (<simboloIgual> (<definicionFlotante> | <identificador>))?
+<declaracionBooleano> ::= <palabraReservadaLet> <palabraReservadaTipoBooleano> <identificador> (<simboloIgual> (<palabraReservadaTrue> | <palabraReservadaFalse> | <identificador>))?
+<declaracionCaracter> ::= <palabraReservadaLet> <palabraReservadaTipoChar> <identificador> (<simboloIgual> (<definicionChar> | <identificador>))?
+<declaracionString> ::= <palabraReservadaLet> <palabraReservadaTipoString> <identificador> (<simboloIgual> (<definicionString> | <identificador>))?
+
+<declaracionArregloEntero> ::= <palabraReservadaLet> <palabraReservadaTipoEntero> <abreCorchete> <definicionNatural> <cierraCorchete> <identificador> <finalExpresion>
+<declaracionArregloChar> ::= <palabraReservadaLet> <palabraReservadaTipoChar> <abreCorchete> <definicionNatural> <cierraCorchete> <identificador> <finalExpresion>
+
+<asignacionArreglo> ::= <simboloIgual> (<definicionChar> | <definicionEntero> | <identificador>)
+<obtenerAsignarElementoArreglo> ::= <identificador> <abreCorchete> <definicionNatural> <cierraCorchete> (<asignacionArreglo>)?
+
+<sentencia> ::= (
+                  <declaracionEntero>
+                | <declaracionFlotante>
+                | <declaracionBooleano>
+                | <declaracionCaracter>
+                | <declaracionString>
+                | <declaracionArregloEntero>
+                | <declaracionArregloChar>
+                | <asignacionDefinicion>
+                | <asignacionEntreIdentificadores>
+                | <asignacion>
+                | <obtenerAsignarElementoArreglo>
+                | <condicional>
+                | <bucle>
+                | <bloqueFor>
+                | "break"
+                | <retorno>
+                | <leerEntrada>
+                | <imprimirElementos>
+                | <comentario>
+              ) <finalExpresion>
+
+<listaSentencias> ::= <sentencias> | ε
+<sentencias> ::= <sentencia> | <sentencia> <sentencias>
+
+<bloque> ::= <abreBloque> <listaSentencias> <cerrarBloque>
+
+<condicional> ::= "decide of"
+                  (<abrirParentesis> <expresionRelacional> <cerrarParentesis> "->" <bloque>)+
+                  ("else" "->" <bloque>)?
+                  "end decide"
+
+<bucle> ::= "loop" <sentencias> "exit when" <abrirParentesis>? <expresionRelacional> <cerrarParentesis>? <finalExpresion> "end loop"
+
+<bloqueFor> ::= "for" <abrirParentesis>? <asignacion> <cerrarParentesis>? 
+                "step" <definicionNatural> ("to" | "downto") <expresion>
+                "do" <bloque>
+
+<expresion> ::= <termino> ( ("+" | "-") <termino> )*
+<termino>   ::= <factor> ( ("*" | "/" | "//" | "%" | "^") <factor> )*
+<factor>    ::= <operacion> | <abrirParentesis> <expresion> <cerrarParentesis>
+
+<operacion> ::= <definicionEntero>
+              | <definicionFlotante>
+              | <palabraReservadaTrue>
+              | <palabraReservadaFalse>
+              | <definicionChar>
+              | <cadena>
+              | <identificador>
+              | <identificadorFuncion>
+              | <sumaUnaria>
+              | <restaUnaria>
+              | <obtenerAsignarElementoArreglo>
+
+<expresionRelacional> ::= <expresionNumerica> <operadorRelacional> <expresionNumerica>
+                        | <expresionBooleana> ("==" | "!=") <expresionBooleana>
+
+<expresionNumerica> ::= <definicionEntero> | <definicionFlotante> | <identificador> | <operacion>
+<expresionBooleana> ::= <palabraReservadaTrue> | <palabraReservadaFalse> | <identificador> | <identificadorFuncion> | <disyuncion>
+
+<disyuncion> ::= <conjuncion> ( <simboloDisyuncion> <conjuncion> )*
+<conjuncion> ::= <negacion> ( <simboloConjuncion> <negacion> )*
+<negacion> ::= <simboloNegacion> <negacion> | <primariaBool>
+
+<primariaBool> ::= <palabraReservadaTrue>
+                 | <palabraReservadaFalse>
+                 | <identificador>
+                 | <identificadorFuncion>
+                 | <abrirParentesis> <expresionBooleana> <cerrarParentesis>
+                 | <expresionRelacional>
+
+<retorno> ::= "return" <expresion>?
+
+<leerEntrada> ::= <palabraReservadaInput> <identificador>
+<imprimirElementos> ::= <palabraReservadaOutput> <abrirParentesis> (<cadena> | <definicionEntero> | <definicionFlotante> | <palabraReservadaTrue> | <palabraReservadaFalse> | <identificador> | <definicionChar>) <cerrarParentesis>
+
+<sumaUnaria> ::= <identificador> "++"
+<restaUnaria> ::= <identificador> "--"

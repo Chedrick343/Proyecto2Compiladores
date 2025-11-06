@@ -1,0 +1,49 @@
+| Programa de prueba para Salchichón Script
+| Prueba de declaraciones, main y expresiones básicas
+
+¡ hola
+esto
+es
+un 
+ras
+comentario
+!
+
+let boolean x = L @ X $
+let String y = "hola" $
+let boolean prueba$
+let float yolo = 0.0001$
+
+_x1 = 30$
+
+printє"hola"э$
+x2єэ$
+
+int mifunc єэ ¿ 
+    return 3$
+?$
+
+init void principal єэ ¿ ?$
+
+void funcion2 єint identificadorэ¿
+    suma = numero + identificador++$
+    decide of є3 < 5 @ 4 < 4э -> ¿
+        suma2 = 4$
+    ?
+    end decide$
+
+    loop
+        let int x = 6$
+        x++$
+    exit when x>10$
+    end loop$
+
+    for єy = 1э step to 10 do ¿
+        unaVariable = 4$
+    ?
+    end for$
+    let int arreglo[5] = [2]$
+    arreglo[2] = 255$
+
+    let char arregloChar[5] = 'esto es un arreglo'$
+?$
