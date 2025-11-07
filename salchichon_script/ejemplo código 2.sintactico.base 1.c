@@ -1,7 +1,7 @@
 
  let string _s1_$
  init void principal є э  ¿ | semantico tipo int, sintactico?
-	| _arr_[67] = -0.01$  | semantico
+	|_arr_[67] = -0.01$  | semantico
 	let bool _b1_$ |semantico
 	let string _s1_$ |semantico
 	input є _s1_ э $ |semantico
