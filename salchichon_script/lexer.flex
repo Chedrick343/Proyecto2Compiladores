@@ -352,10 +352,6 @@ COMENTARIO = {COM_S} | {COM_C}
 
 
 <YYINITIAL> {INT1}      { 
-                            if(!tablaPalabrasReservadas.containsKey(yytext())){
-                                tablaPalabrasReservadas.put(yytext(), "TipoEntero");
-                            }
-                            tokenWriter.println("Token: INT1\tLexema: " + yytext() + "\tTabla: tablaPalabrasReservadas");
                             return new Symbol(sym.INT1, yyline, yycolumn,yytext()); }
 
 
@@ -377,21 +373,14 @@ COMENTARIO = {COM_S} | {COM_C}
 
 
 <YYINITIAL> {FLOAT1}    { 
-                            if(!tablaPalabrasReservadas.containsKey(yytext())){
-                                tablaPalabrasReservadas.put(yytext(), "TipoFloat");
-                            }
-                            tokenWriter.println("Token: FLOAT1\tLexema: " + yytext() + "\tTabla: tablaPalabrasReservadas");
-                            
                             return new Symbol(sym.FLOAT1, yyline, yycolumn,"float"); }
 
 
 <YYINITIAL> {BOOL1}     { 
-                            if(!tablaPalabrasReservadas.containsKey(yytext())){
-                                tablaPalabrasReservadas.put(yytext(), "TipoBool");
-                            }
-                            tokenWriter.println("Token: BOOL1\tLexema: " + yytext() + "\tTabla: tablaPalabrasReservadas");
-                            
-                            return new Symbol(sym.BOOL1, yyline, yycolumn,"booleano"); }
+
+                            return new Symbol(sym.BOOL1, yyline, yycolumn,"booleano"); 
+                             
+                             }
 
 
 <YYINITIAL> {LET}       { 
@@ -403,10 +392,7 @@ COMENTARIO = {COM_S} | {COM_C}
 
 
 <YYINITIAL> {VOID}      {
-                            if(!tablaPalabrasReservadas.containsKey(yytext())){
-                                tablaPalabrasReservadas.put(yytext(), "PalabraReservadaVoid");
-                            }
-                            tokenWriter.println("Token: VOID\tLexema: " + yytext() + "\tTabla: tablaPalabrasReservadas");
+
                             return new Symbol(sym.VOID, yyline, yycolumn, yytext()); }
 
 

@@ -58,7 +58,7 @@ parser code
         public String toString() {
             return "NodoToken{" +
                 "tipo='" + tipo + '\'' +
-                "id = "+ id + '\'' +
+                ", id='" + id + '\'' +
                 ", valor='" + valor + '\'' +
                 ", linea='" + linea + '\'' +
                 ", columna='" + columna + '\'' +
@@ -170,7 +170,8 @@ terminal IMPRIMIR, LEER, MAIN, CADENA;
 // NO TERMINALES
 non terminal Object program;
 non terminal main_funcion, elemento_global, lista_global;
-non terminal tipo, tipo_funcion, declaracion;
+non terminal String tipo, tipo_funcion;
+non terminal declaracion;
 non terminal bloque, lista_sentencias, lista_sentencias_opt, sentencia, expr_opc, llamada_funcion, parametros_llamada, imprimir, leer;
 non terminal funcion, parametros_opt, lista_parametros, parametro;
 non terminal asignacion, asignacion_dec;
@@ -229,7 +230,7 @@ tipo ::= INT1 {: RESULT = "int"; :}
     | CHAR1 {: RESULT = "char"; :}
     ;
 
-tipo_funcion ::= tipo
+tipo_funcion ::= tipo:t {: RESULT = t; :}
     | VOID {: RESULT = "void"; :}
     ;
 
@@ -282,17 +283,16 @@ leer ::= LEER PAR_A PAR_C | LEER PAR_A ID PAR_C ;
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
-funcion ::= tipo_funcion ID:nombreFun PAR_A parametros_opt:params PAR_C
+funcion ::= tipo_funcion:tipoFun ID:nombreFun PAR_A parametros_opt:params PAR_C
             {:
                 NodoToken func = new NodoToken();
                 func.setId(nombreFun.toString());
+                func.setTipo(tipoFun.toString());
                 func.setLinea(String.valueOf(lastLine));
                 func.setColumna(String.valueOf(lastColumn));
                 listaTablasSimbolos.get(globalHash).add(func);
                 currentHash = "TS_FUNC_" + nombreFun.toString();
                 listaTablasSimbolos.put(currentHash, new ArrayList<>());
-
-
             :}
              bloque
              {:
