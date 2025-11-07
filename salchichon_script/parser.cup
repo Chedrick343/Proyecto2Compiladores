@@ -180,6 +180,7 @@ non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
 non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion, arreglo_char; 
+non terminal NT$1, declara_func;
 
 // PRECEDENCIA
 precedence left OR;
@@ -283,24 +284,27 @@ leer ::= LEER PAR_A PAR_C | LEER PAR_A ID PAR_C ;
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
-funcion ::= tipo_funcion:tipoFun ID:nombreFun PAR_A parametros_opt:params PAR_C
-            {:
-                NodoToken func = new NodoToken();
-                func.setId(nombreFun.toString());
-                func.setTipo(tipoFun.toString());
-                func.setLinea(String.valueOf(lastLine));
-                func.setColumna(String.valueOf(lastColumn));
-                listaTablasSimbolos.get(globalHash).add(func);
-                currentHash = "TS_FUNC_" + nombreFun.toString();
-                listaTablasSimbolos.put(currentHash, new ArrayList<>());
-            :}
+funcion ::= declara_func PAR_A parametros_opt:params PAR_C
              bloque
              {:
                 currentHash = globalHash;
                 System.out.println(">> [TS] Regresando a tabla global.");
             :}
-          | tipo_funcion ID PAR_A parametros_opt PAR_C error
+          | declara_func PAR_A parametros_opt PAR_C error
           ;
+
+declara_func::= tipo_funcion:tipoFun ID:nombreFun
+{:
+    NodoToken func = new NodoToken();
+    func.setId(nombreFun.toString());
+    func.setTipo(tipoFun.toString());
+    func.setLinea(String.valueOf(lastLine));
+    func.setColumna(String.valueOf(lastColumn));
+    listaTablasSimbolos.get(globalHash).add(func);
+
+    currentHash = "TS_FUNC_" + nombreFun.toString();
+    listaTablasSimbolos.put(currentHash, new ArrayList<>());
+:};
 
 parametros_opt ::= lista_parametros
                  | // VACIO
@@ -310,7 +314,16 @@ lista_parametros ::= parametro //LISTA DE PARAMETROS ES UN PARAMETRO O LISTA DE 
                   | lista_parametros COMA parametro
                   ;
 
-parametro ::= tipo ID; //UN PARAMETRO ES UN TIPO SEGUIDO DE UN ID
+parametro ::= tipo:ti ID:nombreParam
+    {:
+        NodoToken param = new NodoToken();
+        param.setTipo(ti);
+        param.setId(nombreParam.toString());
+        param.setLinea(String.valueOf(lastLine));
+        param.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(param);
+    :}; 
+//UN PARAMETRO ES UN TIPO SEGUIDO DE UN ID
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 declaracion ::= LET tipo ID asignacion_dec

@@ -57,6 +57,6 @@ float _mi_  є int _dif_, char _otra_ э  ¿  |sintactico  э
 	return 1$ |semantico
   ? 
 
- bool _miOtraFun_  є  э   ¿ 
+ bool _miOtraFun_  є э   ¿ 
 	return -5.6$ |semantico
   ? 
