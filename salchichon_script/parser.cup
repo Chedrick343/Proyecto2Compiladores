@@ -73,6 +73,22 @@ parser code
     public void inicarTS() {
         listaTablasSimbolos.put(globalHash, new ArrayList<>());
         currentHash = globalHash;
+
+        NodoToken printFunc = new NodoToken();
+        printFunc.setTipo("funcion_sistema");
+        printFunc.setId("imprimir");
+        printFunc.setValor("void");
+        printFunc.setLinea("0");
+        printFunc.setColumna("0");
+        listaTablasSimbolos.get(globalHash).add(printFunc);
+
+        NodoToken readFunc = new NodoToken();
+        readFunc.setTipo("funcion_sistema");
+        readFunc.setId("leer");
+        readFunc.setValor("string");
+        readFunc.setLinea("0");
+        readFunc.setColumna("0");
+        listaTablasSimbolos.get(globalHash).add(readFunc);
     }
 
     public void imprimirTablasSimbolos(){
@@ -308,8 +324,41 @@ parametros_llamada ::= expresion
                         |
                         ;
 
-imprimir ::= IMPRIMIR PAR_A expresion PAR_C;
-leer ::= LEER PAR_A PAR_C | LEER PAR_A ID PAR_C ;
+imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
+{:
+    NodoToken imp = new NodoToken();
+    imp.setTipo("llamada_funcion_sistema");
+    imp.setId("imprimir");
+    imp.setValor(e != null ? e.toString() : "");
+    imp.setLinea(String.valueOf(lastLine));
+    imp.setColumna(String.valueOf(lastColumn));
+    listaTablasSimbolos.get(currentHash).add(imp);
+    System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + " con valor: " + imp.getValor());
+:};
+
+leer ::= LEER PAR_A PAR_C
+{:
+    NodoToken leerNode = new NodoToken();
+    leerNode.setTipo("llamada_funcion_sistema");
+    leerNode.setId("leer");
+    leerNode.setValor("entrada_usuario");
+    leerNode.setLinea(String.valueOf(lastLine));
+    leerNode.setColumna(String.valueOf(lastColumn));
+    listaTablasSimbolos.get(currentHash).add(leerNode);
+    System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash);
+:}
+| LEER PAR_A ID:var PAR_C
+{:
+    NodoToken leerNode = new NodoToken();
+    leerNode.setTipo("llamada_funcion_sistema");
+    leerNode.setId("leer");
+    leerNode.setValor("asigna_a:" + var.toString());
+    leerNode.setLinea(String.valueOf(lastLine));
+    leerNode.setColumna(String.valueOf(lastColumn));
+    listaTablasSimbolos.get(currentHash).add(leerNode);
+    System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash + ", asignando a " + var);
+:};
+
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
