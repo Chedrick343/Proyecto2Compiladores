@@ -664,15 +664,46 @@ lista_casos ::= caso
               | lista_casos caso
               ;
 
-caso ::= PAR_A expresion PAR_C FLECHA bloque;
+caso ::=
+    PAR_A expresion PAR_C FLECHA
+    {:
+        // SCOPE POR CADA CASO
+        contadorCase++;
+        String caseScope = currentHash + "_CASE_" + contadorCase;
+        listaTablasSimbolos.put(caseScope, new ArrayList<>());
+        System.out.println(">>> [DEBUG] Inicia ámbito CASE: " + caseScope);
 
-cond_else_opt ::= /* vacío */
-                 | ELSE FLECHA bloque
-                 ;
-    HashMap<String, String> tablaVariables = new HashMap<>();
-    HashMap<String, String> tablaIdentificadores = new HashMap<>();
-    HashMap<String, String> tablaConstantes = new HashMap<>();
-    HashMap<String, String> tablaPalabrasReservadas = new HashMap<>();
+        String anteriorScope = currentHash;
+        currentHash = caseScope;
+        RESULT = anteriorScope;
+    :}
+    bloque
+    {:
+        currentHash = (String) RESULT;
+        System.out.println(">>> [DEBUG] Fin ámbito CASE, regresando a: " + currentHash);
+    :}
+    ;
+
+cond_else_opt ::=
+      /* vacío */
+    | ELSE FLECHA
+    {:
+        contadorElse++;
+        String elseScope = currentHash + "_ELSE_" + contadorElse;
+        listaTablasSimbolos.put(elseScope, new ArrayList<>());
+        System.out.println(">>> [DEBUG] Inicia ámbito ELSE: " + elseScope);
+
+        String anteriorScope = currentHash;
+        currentHash = elseScope;
+        RESULT = anteriorScope;
+    :}
+      bloque
+    {:
+        currentHash = (String) RESULT;
+        System.out.println(">>> [DEBUG] Fin ámbito ELSE, regresando a: " + currentHash);
+    :}
+    ;
+
 bucle_loop ::= LOOP lista_sentencias EXIT WHEN expresion FIN_E END LOOP FIN_E;
 
 bucle_for ::= FOR1 asignacion step ENTERO direccion expresion DO bloque;
