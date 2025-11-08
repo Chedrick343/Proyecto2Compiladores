@@ -70,6 +70,10 @@ parser code
     String currentHash;
     String globalHash = "global1TS";
 
+    int contadorDecide = 0;
+    int contadorCase = 0;
+    int contadorElse = 0;
+
     public void inicarTS() {
         listaTablasSimbolos.put(globalHash, new ArrayList<>());
         currentHash = globalHash;
@@ -629,10 +633,35 @@ op_rel ::= MAYOR
 
 // ESTRUCTURAS DE CONTROL
 
-condicional ::= DECIDE OF lista_casos cond_else_opt END DECIDE;
+// TO-DO: arbol sintáctico para condicionales y bucles
+
+condicional ::=
+    DECIDE OF
+    {:
+        // AQUI SE CREA EL SCOPE PARA EL BLOQUE DECIDE
+        contadorDecide++;
+        String decideScope = currentHash + "_DECIDE_" + contadorDecide;
+        listaTablasSimbolos.put(decideScope, new ArrayList<>());
+        System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideScope);
+        
+        // Guardar el scope anterior
+        String anteriorScope = currentHash;
+        currentHash = decideScope;
+
+        RESULT = anteriorScope;
+    :}
+    lista_casos
+    cond_else_opt
+    END DECIDE
+    {:
+        // recuperar el scope en el que estaba antes
+        currentHash = (String) RESULT;
+        System.out.println(">>> [DEBUG] Fin ámbito DECIDE, regresando a: " + currentHash);
+    :}
+    ;
 
 lista_casos ::= caso
-              | caso lista_casos
+              | lista_casos caso
               ;
 
 caso ::= PAR_A expresion PAR_C FLECHA bloque;
