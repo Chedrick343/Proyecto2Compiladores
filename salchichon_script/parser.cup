@@ -69,7 +69,7 @@ parser code
     HashMap<String, ArrayList<NodoToken>> listaTablasSimbolos = new HashMap<>();
     String currentHash;
     String globalHash = "global1TS";
-
+    int contadorLoop = 0;
     int contadorDecide = 0;
     int contadorCase = 0;
     int contadorElse = 0;
@@ -704,7 +704,28 @@ cond_else_opt ::=
     :}
     ;
 
-bucle_loop ::= LOOP lista_sentencias EXIT WHEN expresion FIN_E END LOOP FIN_E;
+bucle_loop ::=
+    LOOP
+    {:
+        // Crear scope de tabla de símbolos 
+        contadorLoop++;
+        String loopScope = currentHash + "_LOOP_" + contadorLoop;
+        listaTablasSimbolos.put(loopScope, new ArrayList<>());
+        System.out.println(">>> [DEBUG] Inicia ámbito LOOP: " + loopScope);
+        // Guardar el scope anterior
+        String anteriorScope = currentHash;
+        currentHash = loopScope;
+        RESULT = anteriorScope;
+    :}
+    lista_sentencias
+    EXIT WHEN expresion FIN_E
+    END LOOP FIN_E
+    {:
+        // Restaurar el scope previo
+        currentHash = (String) RESULT;
+        System.out.println(">>> [DEBUG] Fin ámbito LOOP, regresando a: " + currentHash);
+    :}
+    ;
 
 bucle_for ::= FOR1 asignacion step ENTERO direccion expresion DO bloque;
 
