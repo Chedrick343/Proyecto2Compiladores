@@ -70,6 +70,7 @@ parser code
     String currentHash;
     String globalHash = "global1TS";
     int contadorLoop = 0;
+    int contadorFor = 0;
     int contadorDecide = 0;
     int contadorCase = 0;
     int contadorElse = 0;
@@ -101,7 +102,7 @@ parser code
             System.out.println("********Valores*********** ");
             for(NodoToken item : listaTablasSimbolos.get(key)){
                 System.out.println(item.toString());
-            }
+        }
             System.out.println("------------------Fin tabla de simbolos : " + key);
         }
     }
@@ -631,7 +632,7 @@ op_rel ::= MAYOR
     | DIF
     ;
 
-// ESTRUCTURAS DE CONTROL
+// ESTRUCTURAS DE CONTROL 
 
 // TO-DO: arbol sintáctico para condicionales y bucles
 
@@ -729,7 +730,31 @@ bucle_loop ::=
 
 bucle_for ::= FOR1 asignacion step ENTERO direccion expresion DO bloque;
 
-step ::= /* vacío */ 
+bucle_for ::=
+    FOR1
+    {:
+        // Crear scope de el for al que se acceda
+        contadorFor++;
+        String forScope = currentHash + "_FOR_" + contadorFor;
+        listaTablasSimbolos.put(forScope, new ArrayList<>());
+        System.out.println(">>> [DEBUG] Inicia ámbito FOR: " + forScope);
+        // Guardar el scope anterior
+        String anteriorScope = currentHash;
+        currentHash = forScope;
+        RESULT = anteriorScope;
+    :}
+    asignacion
+    step ENTERO
+    direccion expresion
+    DO bloque
+    {:
+        // Recupera el scope anterior
+        currentHash = (String) RESULT;
+        System.out.println(">>> [DEBUG] Fin ámbito FOR, regresando a: " + currentHash);
+    :}
+    ;
+
+step ::= /* vacío */
        | STEP
        ;
 

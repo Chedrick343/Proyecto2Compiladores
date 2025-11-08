@@ -24,6 +24,8 @@ float _mi_  є int _dif_, char _otra_ э  ¿  |sintactico  э
 	let int _i_$
 	for  _i_=20 step -2 downto 0 do  | puede dar sintactico
 	 ¿ 
+	 	let int _otra_$
+
 		loop
 		  	_var_2 = _var_2 - 1$ |semantico
 			_var_ = _var_ - 1$ |semantico
