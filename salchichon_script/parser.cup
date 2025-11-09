@@ -141,6 +141,27 @@ parser code
         return null;
     }
 
+    // TO-DO: GENERACION DE CODIGO INTERMEDIO: CODIGO 3 DIRECCIONES 
+    ArrayList<String> codigoIntermedio = new ArrayList<>();
+    int tempCont = 0;
+    int floatTempCont = 0;
+    int labelCont = 0;
+
+    // para enteros
+    String nuevaTempInt() {
+        return "t" + (++tempCont);
+    }
+
+    // para flotantes
+    String nuevaTempFloat() {
+        return "f" + (++floatTempCont);
+    }
+
+    void cod3D(String codigo) {
+        codigoIntermedio.append(codigo).append("\n");
+        System.out.println(">>> [3AC] " + codigo);
+    }
+
     public boolean tieneErrores = false;
 
     // Para recordar última posición válida
@@ -237,7 +258,19 @@ program ::= {:
                 lista_global main_funcion lista_global
             {:
                 imprimirTablasSimbolos();
+
+                // Guardar codigo 3d a archivo
+                try {
+                    java.nio.file.Files.write(
+                        java.nio.file.Paths.get("intermedio.txt"),
+                        codigoIntermedio.toString().getBytes()
+                    );
+                    System.out.println(">>> [3AC] Código intermedio guardado en intermedio.txt");
+                } catch (Exception e) {
+                    System.err.println("MAL" + e.getMessage());
+                }
                 System.out.println("fin de ejecución");
+
             :}
             ;
             
@@ -267,6 +300,9 @@ declara_main_func ::= INIT VOID:tipo MAIN:main
     currentHash = "TS_FUNC_" + main.toString();
     listaTablasSimbolos.put(currentHash, new ArrayList<>());
     System.out.println(">>> [DEBUG] Función main creada: " + currentHash);
+
+    // CODIGO INTERMEDIO
+    cod3D("\n" + main + ":");
 :};
 
 // ======== DECLARACIÓN DE VARIABLES ========
@@ -388,6 +424,10 @@ declara_func::= tipo_funcion:tipoFun ID:nombreFun
     currentHash = "TS_FUNC_" + nombreFun.toString();
     listaTablasSimbolos.put(currentHash, new ArrayList<>());
     System.out.println(">>> [DEBUG] Función creada: " + currentHash);
+
+
+    // CODIGO INTERMEDIO
+    cod3D("\n" + nombreFun + ":");
 :};
 
 parametros_opt ::= lista_parametros
@@ -520,6 +560,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
         if(variable != null){
             if(valor != null){
                 String valorStr = valor.toString();
+                cod3D(nombre + " = " + val);
                 variable.setValor(valorStr);
             } else {
                 variable.setValor("");
@@ -560,7 +601,37 @@ expresion ::= expresion AND expresion
 
 // EXPRESIONES ARITMETICAS
 expresion_arit ::= expresion_arit MAS termino
+    {:
+        String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
+        String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
+        String temp;
+
+        // NO HAY VALIDACION DE QUE AMBOS SEAN TIPOS IGUALES
+        if (tipo1.equals("float") || tipo2.equals("float")) {
+            temp = nuevaTempFloat();
+            cod3D(temp + " = " + e1 + " + " + e2);
+        } else {
+            temp = nuevaTempInt();
+            cod3D(temp + " = " + e1 + " + " + e2);
+        }
+        RESULT = temp;
+    :}
     | expresion_arit MENOS termino
+    {:
+        String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
+        String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
+        String temp;
+
+        // AQUI TAMPOCO HAY VALIDACION SEMANTICA DE TIPOS
+        if (tipo1.equals("float") || tipo2.equals("float")) {
+            temp = nuevaTempFloat();
+            cod3D(temp + " = " + e1 + " - " + e2);
+        } else {
+            temp = nuevaTempInt();
+            cod3D(temp + " = " + e1 + " - " + e2);
+        }
+        RESULT = temp;
+    :}
     | termino:t {: RESULT = t; :}
     ;
 
@@ -716,12 +787,24 @@ bucle_loop ::=
         // Guardar el scope anterior
         String anteriorScope = currentHash;
         currentHash = loopScope;
+
+        // Codigo intermedio
+        cod3D("\n" + currentHash + "_loop_" + contadorLoop + ":");
+
         RESULT = anteriorScope;
     :}
     lista_sentencias
-    EXIT WHEN expresion FIN_E
+    EXIT WHEN expresion:e1 FIN_E
+    {: 
+        // Codigo intermedio NO HAY VALIDACION SEMANTICA
+        cod3D("if " + e1 + " goto " + currentHash + "_endloop_" + contadorLoop);
+    :}
     END LOOP FIN_E
     {:
+        // Codigo intermedio
+        cod3D("goto " + currentHash + "_loop_" + contadorLoop);
+        cod3D(currentHash + "_endloop_" + contadorLoop + ":");
+
         // Restaurar el scope previo
         currentHash = (String) RESULT;
         System.out.println(">>> [DEBUG] Fin ámbito LOOP, regresando a: " + currentHash);
