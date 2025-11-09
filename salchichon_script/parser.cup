@@ -162,6 +162,101 @@ parser code
         System.out.println(">>> [3AC] " + codigo);
     }
 
+
+
+
+
+    // ==================== Validacion semantica ====================
+
+    public void validarAsignacionTipo(String tipoEsperado, String valorAsignado, int linea, int columna) {
+        if (valorAsignado == null || tipoEsperado == null) return;
+
+        switch (tipoEsperado) {
+            case "int":
+                try {
+                    Integer.parseInt(valorAsignado);
+                } catch (NumberFormatException e) {
+                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'int'. Línea %d, columna %d.\u001B[0m%n",
+                        valorAsignado, linea, columna);
+                    tieneErrores = true;
+                }
+                break;
+
+            case "float":
+                try {
+                    Float.parseFloat(valorAsignado);
+                } catch (NumberFormatException e) {
+                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'float'. Línea %d, columna %d.\u001B[0m%n",
+                        valorAsignado, linea, columna);
+                    tieneErrores = true;
+                }
+                break;
+
+            case "boolean":
+                if (!(valorAsignado.equals("true") || valorAsignado.equals("false"))) {
+                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'boolean'. Línea %d, columna %d.\u001B[0m%n",
+                        valorAsignado, linea, columna);
+                    tieneErrores = true;
+                }
+                break;
+
+            case "char":
+                if (valorAsignado.length() != 3 || valorAsignado.charAt(0) != '\'' || valorAsignado.charAt(2) != '\'') {
+                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'char'. Línea %d, columna %d.\u001B[0m%n",
+                        valorAsignado, linea, columna);
+                    tieneErrores = true;
+                }
+                break;
+
+            case "string":
+                if (!valorAsignado.startsWith("\"") || !valorAsignado.endsWith("\"")) {
+                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'string'. Línea %d, columna %d.\u001B[0m%n",
+                        valorAsignado, linea, columna);
+                    tieneErrores = true;
+                }
+                break;
+
+            default:
+                System.err.printf("\u001B[33m [ADVERTENCIA] Tipo '%s' no reconocido para validación semántica.\u001B[0m%n", tipoEsperado);
+                break;
+        }
+    }
+
+
+    /** Devuelve el tipo de una expresion o valor */
+    public String obtenerTipoExpresion(Object valor) {
+        if (valor == null) return "desconocido";
+        String v = valor.toString();
+
+        if (v.startsWith("f")) return "float"; // temporal de float
+        if (v.startsWith("t")) return "int";   // temporal de int
+        if (v.matches("^-?\\d+$")) return "int";
+        if (v.matches("^-?\\d*\\.\\d+$")) return "float";
+        if (v.equals("true") || v.equals("false")) return "boolean";
+        if (v.startsWith("\"") && v.endsWith("\"")) return "string";
+        if (v.startsWith("'") && v.endsWith("'") && v.length() == 3) return "char";
+        
+        // Buscar en tabla de simbolos
+        NodoToken tok = buscarID(v);
+        if (tok != null) return tok.getTipo();
+
+        return "desconocido";
+    }
+
+    /** Valida si dos tipos son compatibles para operaciones aritmeticas */
+    public boolean sonTiposCompatibles(String t1, String t2) {
+        if (t1.equals("int") && t2.equals("int")) return true;
+        if (t1.equals("float") && t2.equals("float")) return true;
+        if ((t1.equals("int") && t2.equals("float")) || (t1.equals("float") && t2.equals("int"))) return true;
+        if (t1.equals("string") && t2.equals("string")) return true; // concatenacion
+        if (t1.equals("char") && t2.equals("char")) return true;     // concatenacion de chars
+        return false;
+    }
+
+
+
+    // ==================== Manejo de errores ====================
+
     public boolean tieneErrores = false;
 
     // Para recordar última posición válida
@@ -473,13 +568,17 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
     
     if (valorExpr != null) {
         String valorStr = valorExpr.toString();
+
+        validarAsignacionTipo(tipoDato, valorStr, lastLine, lastColumn);
+
         declaracion.setValor(valorStr);
         System.out.println(">>> [DEBUG] Variable declarada CON valor: " + nombreDeclaracion.toString() + " = " + valorStr + " en " + currentHash);
     } else {
         declaracion.setValor("");
         System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " + nombreDeclaracion.toString() + " en " + currentHash);
     }
-    
+        // EYDEN: POR QUE HAY UN ELSE AQUI???
+
     declaracion.setLinea(String.valueOf(lastLine));
     declaracion.setColumna(String.valueOf(lastColumn));
     listaTablasSimbolos.get(currentHash).add(declaracion);
@@ -532,7 +631,6 @@ declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar COR_A ENTERO COR_C AS
         declaracion.setValor("arreglo_char");
         System.out.println(">>> [DEBUG] Arreglo de chars declarado SIN valor específico: " + nombreArregloChar.toString() + " en " + currentHash);
     }
-    
     declaracion.setLinea(String.valueOf(lastLine));
     declaracion.setColumna(String.valueOf(lastColumn));
     listaTablasSimbolos.get(currentHash).add(declaracion);
@@ -560,6 +658,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
         if(variable != null){
             if(valor != null){
                 String valorStr = valor.toString();
+                validarAsignacionTipo(variable.getTipo(), valorStr, lastLine, lastColumn);
                 cod3D(nombre + " = " + valor);
                 variable.setValor(valorStr);
             } else {
@@ -601,37 +700,47 @@ expresion ::= expresion AND expresion
 
 // EXPRESIONES ARITMETICAS
 expresion_arit ::= expresion_arit:e1 MAS termino:e2
-    {:
-        String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
-        String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
-        String temp;
+        {:
+            String tipo1 = obtenerTipoExpresion(e1);
+            String tipo2 = obtenerTipoExpresion(e2);
+            String temp;
 
-        // NO HAY VALIDACION DE QUE AMBOS SEAN TIPOS IGUALES
-        if (tipo1.equals("float") || tipo2.equals("float")) {
-            temp = nuevaTempFloat();
-            cod3D(temp + " = " + e1 + " + " + e2);
-        } else {
-            temp = nuevaTempInt();
-            cod3D(temp + " = " + e1 + " + " + e2);
-        }
-        RESULT = temp;
-    :}
+            if (sonTiposCompatibles(tipo1, tipo2)) {
+                if (tipo1.equals("float") || tipo2.equals("float")) {
+                    temp = nuevaTempFloat();
+                } else {
+                    temp = nuevaTempInt();
+                }
+                cod3D(temp + " = " + e1 + " + " + e2);
+                RESULT = temp;
+            } else {
+                System.err.printf("\u001B[31m XXX Error semántico XXX : Tipos incompatibles en suma: '%s' y '%s'. Línea %d, columna %d.\u001B[0m%n",
+                    tipo1, tipo2, lastLine, lastColumn);
+                tieneErrores = true;
+                RESULT = "error";
+            }
+        :}
     | expresion_arit:e1 MENOS termino:e2
-    {:
-        String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
-        String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
-        String temp;
+        {:
+            String tipo1 = obtenerTipoExpresion(e1);
+            String tipo2 = obtenerTipoExpresion(e2);
+            String temp;
 
-        // AQUI TAMPOCO HAY VALIDACION SEMANTICA DE TIPOS
-        if (tipo1.equals("float") || tipo2.equals("float")) {
-            temp = nuevaTempFloat();
-            cod3D(temp + " = " + e1 + " - " + e2);
-        } else {
-            temp = nuevaTempInt();
-            cod3D(temp + " = " + e1 + " - " + e2);
-        }
-        RESULT = temp;
-    :}
+            if (sonTiposCompatibles(tipo1, tipo2)) {
+                if (tipo1.equals("float") || tipo2.equals("float")) {
+                    temp = nuevaTempFloat();
+                } else {
+                    temp = nuevaTempInt();
+                }
+                cod3D(temp + " = " + e1 + " - " + e2);
+                RESULT = temp;
+            } else {
+                System.err.printf("\u001B[31m XXX Error semántico XXX : Tipos incompatibles en resta: '%s' y '%s'. Línea %d, columna %d.\u001B[0m%n",
+                    tipo1, tipo2, lastLine, lastColumn);
+                tieneErrores = true;
+                RESULT = "error";
+            }
+        :}
     | termino:t {: RESULT = t; :}
     ;
 

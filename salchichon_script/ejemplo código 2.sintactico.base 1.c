@@ -1,11 +1,11 @@
 
- let string _s1_$
+ let string _s1_ = "holla"$
  init void principal є э  ¿ | semantico tipo int, sintactico?
 	let int _arr_[67]= [1]$  | semantico
 	|_arr_[67] = [1]$
 	let bool _b1_$ |semantico
 	let string _s1_$ |semantico
-	_s1_ = "Hola mundo"$
+	_s1_ = 43.2323$
 	input є _s1_ э $ |semantico
 	output є _b1_ э $ |semantico
 	output є true э $ |semantico
@@ -15,7 +15,7 @@
  ? 
 
 float _mi_  є int _dif_, char _otra_ э  ¿  |sintactico  э 
-	let int suma = 3$
+	let int suma = 3 + 4.5$
 	let int _arr_2[67]= [1,2,3,4,5]$
 	let char _arr_6[67]= ['H','o','l','a']$
 	_arr_6[4] = '!'$
