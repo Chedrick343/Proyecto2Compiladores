@@ -26,3 +26,5 @@ bin/
 *.bak
 *.log
 tokens.txt
+intermedio.txt
+dump.txt

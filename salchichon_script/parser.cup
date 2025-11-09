@@ -142,7 +142,7 @@ parser code
     }
 
     // TO-DO: GENERACION DE CODIGO INTERMEDIO: CODIGO 3 DIRECCIONES 
-    ArrayList<String> codigoIntermedio = new ArrayList<>();
+    StringBuilder codigoIntermedio = new StringBuilder();
     int tempCont = 0;
     int floatTempCont = 0;
     int labelCont = 0;
@@ -560,7 +560,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
         if(variable != null){
             if(valor != null){
                 String valorStr = valor.toString();
-                cod3D(nombre + " = " + val);
+                cod3D(nombre + " = " + valor);
                 variable.setValor(valorStr);
             } else {
                 variable.setValor("");
@@ -600,7 +600,7 @@ expresion ::= expresion AND expresion
     ;
 
 // EXPRESIONES ARITMETICAS
-expresion_arit ::= expresion_arit MAS termino
+expresion_arit ::= expresion_arit:e1 MAS termino:e2
     {:
         String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
         String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
@@ -616,7 +616,7 @@ expresion_arit ::= expresion_arit MAS termino
         }
         RESULT = temp;
     :}
-    | expresion_arit MENOS termino
+    | expresion_arit:e1 MENOS termino:e2
     {:
         String tipo1 = (e1 != null && e1.toString().startsWith("f")) ? "float" : "int";
         String tipo2 = (e2 != null && e2.toString().startsWith("f")) ? "float" : "int";
@@ -783,13 +783,16 @@ bucle_loop ::=
         contadorLoop++;
         String loopScope = currentHash + "_LOOP_" + contadorLoop;
         listaTablasSimbolos.put(loopScope, new ArrayList<>());
+
+        cod3D("\n" + currentHash + "_loop_" + contadorLoop + ":");
+
+
         System.out.println(">>> [DEBUG] Inicia ámbito LOOP: " + loopScope);
         // Guardar el scope anterior
         String anteriorScope = currentHash;
         currentHash = loopScope;
 
         // Codigo intermedio
-        cod3D("\n" + currentHash + "_loop_" + contadorLoop + ":");
 
         RESULT = anteriorScope;
     :}
@@ -810,8 +813,6 @@ bucle_loop ::=
         System.out.println(">>> [DEBUG] Fin ámbito LOOP, regresando a: " + currentHash);
     :}
     ;
-
-bucle_for ::= FOR1 asignacion step ENTERO direccion expresion DO bloque;
 
 bucle_for ::=
     FOR1
