@@ -256,7 +256,7 @@ COMENTARIO = {COM_S}|{COM_C}
         cadena = ""; 
         yybegin(YYINITIAL);
         System.out.println(">>> [LEXER] Cadena completa: \"" + tmp + "\"");
-        return symbol(sym.CADENA, tmp); 
+        return symbol(sym.CADENA, "\"" + tmp + "\""); 
     }
     \n {
         String tmp = cadena; 
