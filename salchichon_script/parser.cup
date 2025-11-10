@@ -3,6 +3,7 @@ package salchichon_script;
 import java_cup.runtime.Symbol;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.io.FileWriter;
 
 // PARSER
 parser code
@@ -97,13 +98,23 @@ parser code
     }
 
     public void imprimirTablasSimbolos(){
-        for(String key: listaTablasSimbolos.keySet()){
-            System.out.println("------------------Tabla de simbolo : " + key);
-            System.out.println("********Valores*********** ");
-            for(NodoToken item : listaTablasSimbolos.get(key)){
-                System.out.println(item.toString());
-        }
-            System.out.println("------------------Fin tabla de simbolos : " + key);
+        try{
+            FileWriter writer = new FileWriter("tokens.txt");
+            for(String key: listaTablasSimbolos.keySet()){
+                System.out.println("------------------Tabla de simbolo : " + key);
+                writer.write("Tabla de simbolos: " + key + "\n");
+                writer.write("********Valores*********** \n");
+                System.out.println("********Valores*********** ");
+                for(NodoToken item : listaTablasSimbolos.get(key)){
+                    System.out.println(item.toString());
+                    writer.write(item.toString() + "\n");
+                }
+                System.out.println("------------------Fin tabla de simbolos : " + key);
+                writer.write("------------------Fin tabla de simbolos : " + key + "\n\n");
+            }
+            writer.close();
+        }catch(Exception e){
+            System.out.println("Error al escribir el archivo de tokens: " + e.getMessage());
         }
     }
     
@@ -379,7 +390,7 @@ program ::= {:
             :}
                 lista_global main_funcion lista_global
             {:
-                //imprimirTablasSimbolos();
+                imprimirTablasSimbolos();
 
                 // Guardar codigo 3d a archivo
                 try {
