@@ -101,15 +101,15 @@ parser code
         try{
             FileWriter writer = new FileWriter("tokens.txt");
             for(String key: listaTablasSimbolos.keySet()){
-                System.out.println("------------------Tabla de simbolo : " + key);
+                //System.out.println("------------------Tabla de simbolo : " + key);
                 writer.write("Tabla de simbolos: " + key + "\n");
                 writer.write("********Valores*********** \n");
-                System.out.println("********Valores*********** ");
+                //System.out.println("********Valores*********** ");
                 for(NodoToken item : listaTablasSimbolos.get(key)){
-                    System.out.println(item.toString());
+                    //System.out.println(item.toString());
                     writer.write(item.toString() + "\n");
                 }
-                System.out.println("------------------Fin tabla de simbolos : " + key);
+                //System.out.println("------------------Fin tabla de simbolos : " + key);
                 writer.write("------------------Fin tabla de simbolos : " + key + "\n\n");
             }
             writer.close();
@@ -706,6 +706,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
             System.err.printf("\u001B[31m XXX Error semántico XXX :       La variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m %n", nombre.toString(), lastLine, lastColumn);
             tieneErrores = true;
         }
+        RESULT = valor;
     :}
     | ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
     {:
@@ -962,34 +963,49 @@ bucle_loop ::=
 
 bucle_for ::=
     FOR1
-    {:
+    asignacion:e
+    step ENTERO:valor
+    direccion:dir expresion:limite
+    {:  
         // Crear scope de el for al que se acceda
+        cod3D("$t1 = " + e);
+        cod3D("$t2 = " + limite);
         contadorFor++;
         String forScope = currentHash + "_FOR_" + contadorFor;
+        cod3D(forScope + ":");
         crearSubAmbito(forScope);
         System.out.println(">>> [DEBUG] Inicia ámbito FOR: " + forScope);
         // Guardar el scope anterior
         String anteriorScope = currentHash;
         currentHash = forScope;
         RESULT = anteriorScope;
+        
     :}
-    asignacion
-    step ENTERO
-    direccion expresion
-    DO bloque
-    {:
+    DO bloque 
+    {:  
+        String forFinal = currentHash + "_endfor_" + contadorFor;
+        cod3D("beq $t1, $t2, " + forFinal);
+        System.out.println(">>> [DEBUG] ************+ DIRECCION DEL FOR: " + dir + " con valor de paso: " + valor);
+        if(dir.equals("to")){
+            cod3D("addi $t1, $t1, "+ valor);
+        } else if(dir.equals("downto")){
+            cod3D("addi $t1, $t1, "+ valor);
+        }
+        cod3D("j " +currentHash);
+        cod3D(forFinal+ ":");
         // Recupera el scope anterior
         currentHash = (String) RESULT;
         System.out.println(">>> [DEBUG] Fin ámbito FOR, regresando a: " + currentHash);
     :}
+    
     ;
 
 step ::= /* vacío */
        | STEP
        ;
 
-direccion ::= TO
-            | DOWNTO
+direccion ::= TO:to {: RESULT = to.toString(); :}
+            | DOWNTO:downto {: RESULT = downto.toString(); :}
             ;
 
 //++++++++++++++++++++++++++++++++ARREGLOS+++++++++++++++++++++++++++++
