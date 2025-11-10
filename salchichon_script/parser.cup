@@ -141,6 +141,33 @@ parser code
         return null;
     }
 
+    /**
+     * Crea un nuevo scope (tabla de símbolos) heredando las variables visibles del scope su[perior.
+     * @param nombreScope Nombre único del nuevo ámbito.
+     */
+    public void crearSubAmbito(String nombreScope) {
+        ArrayList<NodoToken> nuevo = new ArrayList<>();
+
+        // Copiar los simbolos anteriores al nuevo scope
+        if (listaTablasSimbolos.containsKey(currentHash)) {
+            for (NodoToken tok : listaTablasSimbolos.get(currentHash)) {
+                NodoToken copia = new NodoToken();
+                copia.setTipo(tok.getTipo());
+                copia.setId(tok.getId());
+                copia.setValor(tok.getValor());
+                copia.setLinea(tok.getLinea());
+                copia.setColumna(tok.getColumna());
+                nuevo.add(copia);
+            }
+        }
+
+        // Registrar el nuevo scope con los simbolos heredados
+        listaTablasSimbolos.put(nombreScope, nuevo);
+
+        System.out.println(">>> [DEBUG] Nuevo ámbito creado: " + nombreScope + " heredando de " + currentHash);
+    }
+
+
     // TO-DO: GENERACION DE CODIGO INTERMEDIO: CODIGO 3 DIRECCIONES 
     StringBuilder codigoIntermedio = new StringBuilder();
     int tempCont = 0;
@@ -352,7 +379,7 @@ program ::= {:
             :}
                 lista_global main_funcion lista_global
             {:
-                imprimirTablasSimbolos();
+                //imprimirTablasSimbolos();
 
                 // Guardar codigo 3d a archivo
                 try {
@@ -822,7 +849,7 @@ condicional ::=
         // AQUI SE CREA EL SCOPE PARA EL BLOQUE DECIDE
         contadorDecide++;
         String decideScope = currentHash + "_DECIDE_" + contadorDecide;
-        listaTablasSimbolos.put(decideScope, new ArrayList<>());
+        crearSubAmbito(decideScope);
         System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideScope);
         
         // Guardar el scope anterior
@@ -851,7 +878,7 @@ caso ::=
         // SCOPE POR CADA CASO
         contadorCase++;
         String caseScope = currentHash + "_CASE_" + contadorCase;
-        listaTablasSimbolos.put(caseScope, new ArrayList<>());
+        crearSubAmbito(caseScope);
         System.out.println(">>> [DEBUG] Inicia ámbito CASE: " + caseScope);
 
         String anteriorScope = currentHash;
@@ -871,7 +898,7 @@ cond_else_opt ::=
     {:
         contadorElse++;
         String elseScope = currentHash + "_ELSE_" + contadorElse;
-        listaTablasSimbolos.put(elseScope, new ArrayList<>());
+        crearSubAmbito(elseScope);
         System.out.println(">>> [DEBUG] Inicia ámbito ELSE: " + elseScope);
 
         String anteriorScope = currentHash;
@@ -891,8 +918,7 @@ bucle_loop ::=
         // Crear scope de tabla de símbolos 
         contadorLoop++;
         String loopScope = currentHash + "_LOOP_" + contadorLoop;
-        listaTablasSimbolos.put(loopScope, new ArrayList<>());
-
+        crearSubAmbito(loopScope);
         cod3D("\n" + currentHash + "_loop_" + contadorLoop + ":");
 
 
@@ -929,7 +955,7 @@ bucle_for ::=
         // Crear scope de el for al que se acceda
         contadorFor++;
         String forScope = currentHash + "_FOR_" + contadorFor;
-        listaTablasSimbolos.put(forScope, new ArrayList<>());
+        crearSubAmbito(forScope);
         System.out.println(">>> [DEBUG] Inicia ámbito FOR: " + forScope);
         // Guardar el scope anterior
         String anteriorScope = currentHash;
