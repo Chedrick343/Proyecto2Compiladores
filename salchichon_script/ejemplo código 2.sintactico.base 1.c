@@ -2,7 +2,7 @@
  let string _s1_ = "holla"$
  init void principal є э  ¿ | semantico tipo int, sintactico?
 	let int _arr_[67]= [1]$  | semantico
-	|_arr_[67] = [1]$
+	_arr_[67] = 1$
 	let bool _b1_$ |semantico
 	let string _s1_$ |semantico
 	_s1_ = 43.2323$
@@ -12,6 +12,8 @@
 	output є _b1_ э $ |semantico
 	output є true э $ |semantico
 	output є -6.7 э $
+	let int x[20]$
+	x = _arr_[67]$ 
 	return$  |sintactico
 	return 1+_f_ є  э $
  ? 
