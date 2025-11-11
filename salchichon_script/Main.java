@@ -7,8 +7,8 @@ public class Main {
 
     public static void main(String[] args) {
         generarCompilador();
-        probarLexer("salchichon_script/ejemplo código 2.sintactico.base 1.c");
-        probarParser("salchichon_script/ejemplo código 2.sintactico.base 1.c");
+        probarLexer("salchichon_script/ejemplo código 1.sintactico.base 1.c");
+        probarParser("salchichon_script/ejemplo código 1.sintactico.base 1.c");
 
     }
 

@@ -290,26 +290,158 @@ parser code
         }
     }
 
+    boolean esCeroLiteral(String v) {
+        return "0".equals(v) || "0.0".equals(v) || "0.".equals(v) || ".0".equals(v);
+    }
 
-    /** Devuelve el tipo de una expresion o valor */
+    boolean esEnteroTipo(String t) {
+        return "int".equals(t);
+    }
+
+    boolean esFloatTipo(String t) {
+        return "float".equals(t);
+    }
+
+    boolean sonAmbosEnteros(String t1, String t2) {
+        return esEnteroTipo(t1) && esEnteroTipo(t2);
+    }
+
+
+    String tipoNumericoResultanteProducto(String tL, String tR) {
+        if ("int".equals(tL) && "int".equals(tR)) return "int";
+        if (( "int".equals(tL) || "float".equals(tL) ) &&
+            ( "int".equals(tR) || "float".equals(tR) )) return "float";
+        return "desconocido";
+    }
+
+    boolean ambosNumericos(String tL, String tR) {
+        return ( "int".equals(tL) || "float".equals(tL) ) &&
+            ( "int".equals(tR) || "float".equals(tR) );
+    }
+    // --- helpers ---
+    static class OpHit { int pos; String op; OpHit(int p,String o){pos=p;op=o;} }
+
+    boolean isBinaryMinus(String s, int i) {
+        int j = i - 1;
+        while (j >= 0 && Character.isWhitespace(s.charAt(j))) j--;
+        if (j < 0) return false; // inicio = unario
+        char L = s.charAt(j);
+        return Character.isLetterOrDigit(L) || L==')' || L==']' || L=='\'' || L=='"';
+    }
+
+    OpHit findTopLevelOp(String s, String[] ops, boolean preferLast) {
+        int depth = 0;
+        boolean inStr = false, inChar = false;
+        OpHit hit = null;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            // literales
+            if (inStr) { if (c=='"'  && s.charAt(i-1)!='\\') inStr=false; continue; }
+            if (inChar){ if (c=='\'' && s.charAt(i-1)!='\\') inChar=false; continue; }
+            if (c=='"')  { inStr=true;  continue; }
+            if (c=='\'') { inChar=true; continue; }
+
+            // paréntesis
+            if (c=='(') { depth++; continue; }
+            if (c==')') { depth--; continue; }
+            if (depth!=0) continue;
+
+            // operador de dos caracteres: //
+            if (c=='/' && i+1<s.length() && s.charAt(i+1)=='/') {
+                for (String op: ops) if (op.equals("//")) {
+                    OpHit h = new OpHit(i, "//");
+                    if (!preferLast) return h; else hit = h;
+                }
+                i++;
+                continue;
+            }
+
+            // operadores de un carac
+            for (String op: ops) if (op.length()==1 && c==op.charAt(0)) {
+                if (op.equals("-") && !isBinaryMinus(s,i)) continue; // '-' unario, ignora
+                OpHit h = new OpHit(i, op);
+                if (!preferLast) return h; else hit = h;
+            }
+        }
+        return hit;
+    }
+
+    String stripOuterParens(String s) {
+        if (s==null) return null;
+        s = s.trim();
+        while (s.length()>=2 && s.charAt(0)=='(' && s.charAt(s.length()-1)==')') {
+            int depth=0; boolean ok=true;
+            for (int i=0;i<s.length();i++){
+                char c=s.charAt(i);
+                if (c=='(') depth++;
+                else if (c==')'){ depth--; if (depth<0){ok=false;break;} }
+                if (depth==0 && i<s.length()-1){ ok=false; break; }
+            }
+            if (!ok) break;
+            s = s.substring(1,s.length()-1).trim();
+        }
+        return s;
+    }
+
+    // --- la función parcheada ---
     public String obtenerTipoExpresion(Object valor) {
         if (valor == null) return "desconocido";
-        String v = valor.toString();
+        String v = valor.toString().trim();
+        if (v.isEmpty()) return "desconocido";
+        v = stripOuterParens(v);
 
-        if (v.startsWith("f")) return "float"; // temporal de float
-        if (v.startsWith("t")) return "int";   // temporal de int
+        if (v.startsWith("f")) return "float";
+        if (v.startsWith("t")) return "int";
         if (v.matches("^-?\\d+$")) return "int";
         if (v.matches("^-?\\d*\\.\\d+$")) return "float";
         if (v.equals("true") || v.equals("false")) return "boolean";
         if (v.startsWith("\"") && v.endsWith("\"")) return "string";
-        if (v.startsWith("'") && v.endsWith("'") && v.length() == 3) return "char";
-        
-        // Buscar en tabla de simbolos
+        if (v.startsWith("'") && v.endsWith("'") && v.length()==3) return "char";
+
+        OpHit hit = findTopLevelOp(v, new String[]{"+","-"}, true);
+        if (hit != null) {
+            String L = v.substring(0, hit.pos).trim();
+            String R = v.substring(hit.pos + 1).trim();
+            String tL = obtenerTipoExpresion(L);
+            String tR = obtenerTipoExpresion(R);
+            if (hit.op.equals("+")) {
+                if (ambosNumericos(tL,tR)) return ("float".equals(tL)||"float".equals(tR)) ? "float" : "int";
+                if (("string".equals(tL) && "string".equals(tR)) ||
+                    ("char".equals(tL) && "char".equals(tR))) return "string";
+                return "desconocido";
+            } else { // '-'
+                return ambosNumericos(tL,tR) ? (("float".equals(tL)||"float".equals(tR)) ? "float" : "int") : "desconocido";
+            }
+        }
+
+        hit = findTopLevelOp(v, new String[]{"//","*","/","%"}, false);
+        if (hit != null) {
+            String L, R;
+            if ("\\/\\/".equals(hit.op)) {
+                L = v.substring(0, hit.pos).trim();
+                R = v.substring(hit.pos + 2).trim();
+            } else {
+                L = v.substring(0, hit.pos).trim();
+                R = v.substring(hit.pos + 1).trim();
+            }
+            String tL = obtenerTipoExpresion(L);
+            String tR = obtenerTipoExpresion(R);
+            switch (hit.op) {
+                case "*":  return tipoNumericoResultanteProducto(tL,tR);
+                case "/":  return ambosNumericos(tL,tR) ? "float" : "desconocido";
+                case "//": return ("int".equals(tL) && "int".equals(tR)) ? "int" : "desconocido";
+                case "%":  return ("int".equals(tL) && "int".equals(tR)) ? "int" : "desconocido";
+            }
+        }
+
         NodoToken tok = buscarID(v);
         if (tok != null) return tok.getTipo();
 
         return "desconocido";
     }
+
+
 
     /** Valida si dos tipos son compatibles para operaciones aritmeticas */
     public boolean sonTiposCompatibles(String t1, String t2) {
@@ -759,8 +891,11 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                 tempValor = valorReal;
             }
 
+<<<<<<< HEAD
             validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
 
+=======
+>>>>>>> 8fac8e7b87e91d63e503837a9811d8807c127512
             declaracion.setValor(valorReal);
 
             cod3D(nombreDeclaracion + " = " + tempValor);
@@ -909,21 +1044,42 @@ asignacion ::= ID:nombre ASIGN expresion:valor
 
 
 // EXPRESIONES
-expresion ::=
-    expresion:e1 AND expresion:e2
+expresion ::= expresion:e1 AND expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "&&", ((HashMap)e2).get("temp").toString());
-        res.put("temp", temp);
-        res.put("valor", "true");
+        HashMap<String, String> res = new HashMap<>();
+        
+        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+            String temp1 = ((HashMap)e1).get("temp").toString();
+            String temp2 = ((HashMap)e2).get("temp").toString();
+            String temp = genOperacion3D(temp1, "&&", temp2);
+            res.put("temp", temp);
+            res.put("valor", "true");
+        } else {
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión AND. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+            tieneErrores = true;
+            res.put("temp", "error");
+            res.put("valor", "error");
+        }
+        
         RESULT = res;
     :}
 | expresion:e1 OR expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "||", ((HashMap)e2).get("temp").toString());
-        res.put("temp", temp);
-        res.put("valor", "true");
+        HashMap<String, String> res = new HashMap<>();
+        
+        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+            String temp1 = ((HashMap)e1).get("temp").toString();
+            String temp2 = ((HashMap)e2).get("temp").toString();
+            String temp = genOperacion3D(temp1, "||", temp2);
+            res.put("temp", temp);
+            res.put("valor", "true");
+        } else {
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión OR. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+            tieneErrores = true;
+            res.put("temp", "error");
+            res.put("valor", "error");
+        }
+        
         RESULT = res;
     :}
 | NOT expresion:e
@@ -954,25 +1110,36 @@ expresion ::=
 
 | expresion_arit:e1 op_rel:op expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String val1 = ((HashMap)e1).get("valor").toString();
-        String val2 = ((HashMap)e2).get("valor").toString();
-        String tipo1 = obtenerTipoExpresion(val1);
-        String tipo2 = obtenerTipoExpresion(val2);
-        if (sonTiposCompatibles(tipo1, tipo2)) {
-            String t1 = ((HashMap)e1).get("temp").toString();
-            String t2 = ((HashMap)e2).get("temp").toString();
-            String temp = genOperacion3D(t1, op.toString(), t2);
-            res.put("temp", temp);
-            res.put("valor", "true");
-            RESULT = res;
+        HashMap<String, String> res = new HashMap<>();
+        System.out.println(">>> [DEBUG] Evaluando expresión relacional con operadores: " + op.toString());
+        System.out.println(">>> [DEBUG] e1: " + e1);
+        System.out.println(">>> [DEBUG] e2: " + e2);
+        if (e1 != null && e2 != null) {
+            String val1 = ((HashMap)e1).get("valor").toString();
+            String val2 = ((HashMap)e2).get("valor").toString();
+            String tipo1 = obtenerTipoExpresion(val1);
+            String tipo2 = obtenerTipoExpresion(val2);
+
+            if (sonTiposCompatibles(tipo1, tipo2)) {
+                String t1 = ((HashMap)e1).get("temp").toString();
+                String t2 = ((HashMap)e2).get("temp").toString();
+                String temp = genOperacion3D(t1, op.toString(), t2);
+                res.put("temp", temp);
+                res.put("valor", "true");
+                RESULT = res;
+            } else {
+                System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
+                    tipo1, tipo2, lastLine, lastColumn);
+                tieneErrores = true;
+                RESULT = null;
+            }
         } else {
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
-                tipo1, tipo2, lastLine, lastColumn);
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Expresiones nulas en operación relacional. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
             tieneErrores = true;
             RESULT = null;
         }
     :}
+
 | expresion_arit:e {: RESULT = e; :}
 ;
 
@@ -984,15 +1151,17 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
+
         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
             String temp = genOperacion3D(t1, "+", t2);
             res.put("temp", temp);
-            res.put("valor", "("+v1+"+"+v2+")");
+            res.put("valor", v1+"+"+v2);
         } else {
             tieneErrores = true;
             res.put("temp","error");
             res.put("valor","error");
         }
+
         RESULT = res;
     :}
 | expresion_arit:e1 MENOS termino:e2
@@ -1002,10 +1171,11 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
+
         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
             String temp = genOperacion3D(t1, "-", t2);
             res.put("temp", temp);
-            res.put("valor", "("+v1+"-"+v2+")");
+            res.put("valor", v1+"-"+v2);
         } else {
             tieneErrores = true;
             res.put("temp","error");
@@ -1024,14 +1194,20 @@ termino ::= termino:e1 POR factor:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
-        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
-            String temp = genOperacion3D(t1, "*", t2);
-            res.put("temp", temp);
-            res.put("valor", "("+v1+"*"+v2+")");
-        } else {
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonTiposCompatibles(tt1, tt2)) {
             tieneErrores = true;
             res.put("temp","error");
             res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en multiplicación. Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "*", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "*" + v2);
         }
         RESULT = res;
     :}
@@ -1042,13 +1218,95 @@ termino ::= termino:e1 POR factor:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
-        String temp = genOperacion3D(t1, "/", t2);
-        res.put("temp", temp);
-        res.put("valor", "("+v1+"/"+v2+")");
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonTiposCompatibles(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en división. Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: División por cero (literal 0/0.0). Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "/", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "/" + v2);
+        }
+        RESULT = res;
+    :}
+| termino:e1 DIV_ENT factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonAmbosEnteros(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: DIV_ENT requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: División entera por cero. Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "//", t2); 
+            res.put("temp", temp);
+            res.put("valor", v1 + "//" + v2);
+        }
+        RESULT = res;
+    :}
+| termino:e1 MOD factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonAmbosEnteros(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: MOD requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Módulo por cero. Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "%", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "%" + v2);
+        }
         RESULT = res;
     :}
 | factor:f {: RESULT = f; :}
 ;
+
 
 // FACTORES
 factor ::= potencia:e1 POT potencia:e2
