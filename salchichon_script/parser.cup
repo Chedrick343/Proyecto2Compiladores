@@ -233,6 +233,9 @@ parser code
 
     // ==================== Validacion semantica ====================
 
+
+    // HAY QUE VALIDAR SI HAY PARENTESIS CON EXPRESIONES DENTRO
+    // 1 + (2 * 3)  -> validar 2 * 3 primero
     public void validarAsignacionTipo(String tipoEsperado, String valorAsignado, int linea, int columna) {
         if (valorAsignado == null || tipoEsperado == null) return;
 
@@ -318,6 +321,17 @@ parser code
         return false;
     }
 
+    public boolean esIdExistente(String currentHash, String id) {
+
+        if (listaTablasSimbolos.containsKey(currentHash)) {
+            for (NodoToken existente : listaTablasSimbolos.get(currentHash)) {
+                if (existente.getId().equals(id)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 
     // ==================== Manejo de errores ====================
@@ -527,15 +541,42 @@ parametros_llamada ::= expresion
 
 imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
 {:
-    NodoToken imp = new NodoToken();
-    imp.setTipo("llamada_funcion_sistema");
-    imp.setId("imprimir");
-    imp.setValor(e != null ? e.toString() : "");
-    imp.setLinea(String.valueOf(lastLine));
-    imp.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(imp);
-    System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + " con valor: " + imp.getValor());
+    String valorReal = "";
+    String tempValor = "";
+
+    if (e != null) {
+        if (e instanceof java.util.HashMap) {
+            valorReal = ((HashMap)e).get("valor").toString();
+            tempValor = ((HashMap)e).get("temp").toString();
+        } else {
+            valorReal = e.toString();
+            tempValor = valorReal;
+        }
+
+        NodoToken posibleVar = buscarID(valorReal);
+
+        cod3D("print " + tempValor);
+
+        NodoToken imp = new NodoToken();
+        imp.setTipo("llamada_funcion_sistema");
+        imp.setId("imprimir");
+        imp.setValor(valorReal);
+        imp.setLinea(String.valueOf(lastLine));
+        imp.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(imp);
+
+        System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + 
+                           " con valor: " + valorReal + 
+                           " (temp: " + tempValor + ")");
+    } else {
+        System.err.printf("\u001B[31mXXX Error semántico: llamada a imprimir() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
+            lastLine, lastColumn);
+        tieneErrores = true;
+    }
+
+    RESULT = null; 
 :};
+
 
 leer ::= LEER PAR_A PAR_C
 {:
@@ -598,67 +639,89 @@ lista_parametros ::= parametro
                   | lista_parametros COMA parametro
                   ;
 
+// TO-DO: AGREGAR PARAMETROS A codigo intermedio 
 parametro ::= tipo:ti ID:nombreParam
     {:
-        NodoToken param = new NodoToken();
-        param.setTipo(ti);
-        param.setId(nombreParam.toString());
-        param.setLinea(String.valueOf(lastLine));
-        param.setColumna(String.valueOf(lastColumn));
-        listaTablasSimbolos.get(currentHash).add(param);
-        System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+
+        if (esIdExistente(currentHash, nombreParam.toString())) {
+            System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
+                nombreParam.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        } else {
+            NodoToken param = new NodoToken();
+            param.setTipo(ti);
+            param.setId(nombreParam.toString());
+            param.setLinea(String.valueOf(lastLine));
+            param.setColumna(String.valueOf(lastColumn));
+            listaTablasSimbolos.get(currentHash).add(param);
+            System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+        }
     :};
+
 
 //+++++++++++++++++++++DECLARACIONES Y ASIGNACIONES+++++++++++++++
 
 // VERSIÓN SIMPLIFICADA - DECLARACIONES SEPARADAS
 declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion 
 {:
-    // Declaración SIN asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo(tipoDato);
-    declaracion.setId(nombreDeclaracion.toString());
-    declaracion.setValor(""); // Valor vacío por defecto
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
-    System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+
+    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+        System.err.printf(" \u001B[31mXXX Error semántico: Variable '%s' ya declarada en scope actual. Línea %d, columna %d.\u001B[0m%n",
+            nombreDeclaracion.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    } else {
+        // Declaración SIN asignación
+        NodoToken declaracion = new NodoToken();
+        declaracion.setTipo(tipoDato);
+        declaracion.setId(nombreDeclaracion.toString());
+        declaracion.setValor(""); // Valor vacío por defecto
+        declaracion.setLinea(String.valueOf(lastLine));
+        declaracion.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(declaracion);
+        System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+    }
 :} 
 | LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
 {:
-    // Declaración CON asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo(tipoDato);
-    declaracion.setId(nombreDeclaracion.toString());
+    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+        System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' ya declarada en ámbito actual. Línea %d, columna %d.\u001B[0m%n",
+            nombreDeclaracion.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    } else {
+        // Declaración CON asignación
+        NodoToken declaracion = new NodoToken();
+        declaracion.setTipo(tipoDato);
+        declaracion.setId(nombreDeclaracion.toString());
 
-    if (valorExpr != null) {
-        String valorReal = "";
-        String tempValor = "";
-        if (valorExpr instanceof java.util.HashMap) {
-            valorReal = ((HashMap)valorExpr).get("valor").toString();
-            tempValor = ((HashMap)valorExpr).get("temp").toString();
+        if (valorExpr != null) {
+            String valorReal = "";
+            String tempValor = "";
+            if (valorExpr instanceof java.util.HashMap) {
+                valorReal = ((HashMap)valorExpr).get("valor").toString();
+                tempValor = ((HashMap)valorExpr).get("temp").toString();
+            } else {
+                valorReal = valorExpr.toString();
+                tempValor = valorReal;
+            }
+
+            validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+
+            declaracion.setValor(valorReal);
+
+            cod3D(nombreDeclaracion + " = " + tempValor);
+
+            System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
+                + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
         } else {
-            valorReal = valorExpr.toString();
-            tempValor = valorReal;
+            declaracion.setValor("");
+            System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
+                + nombreDeclaracion.toString() + " en " + currentHash);
         }
 
-        validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
-
-        declaracion.setValor(valorReal);
-
-        cod3D(nombreDeclaracion + " = " + tempValor);
-
-        System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
-            + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
-    } else {
-        declaracion.setValor("");
-        System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
-            + nombreDeclaracion.toString() + " en " + currentHash);
+        declaracion.setLinea(String.valueOf(lastLine));
+        declaracion.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(declaracion);
     }
-
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
 :}
 ;
 

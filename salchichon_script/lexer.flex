@@ -266,6 +266,6 @@ COMENTARIO = {COM_S}|{COM_C}
     }
     [^\"] { 
         cadena += yytext(); 
-        System.out.println(">>> [LEXER] Agregando a cadena: " + yytext());
+        //System.out.println(">>> [LEXER] Agregando a cadena: " + yytext());
     }
 }

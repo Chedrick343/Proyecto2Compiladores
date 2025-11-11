@@ -13,7 +13,7 @@ let bool _b1_$
 	output є numS э $
 
 	let float=-0.01$ |error sintactico
-	let char _x22_='a'$ ¡semantico x22!
+	let char x22='a'$ ¡semantico x22!
 	let char _miChar_='!'  |error sintactico
 	let char _miChar2_='!!'$ |sintactico-semantico
 	let int _x30_=-1$
