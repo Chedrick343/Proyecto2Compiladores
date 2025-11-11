@@ -894,11 +894,8 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                 tempValor = valorReal;
             }
 
-<<<<<<< HEAD
-            validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+            //validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
 
-=======
->>>>>>> 8fac8e7b87e91d63e503837a9811d8807c127512
             declaracion.setValor(valorReal);
 
             cod3D(nombreDeclaracion + " = " + tempValor);
