@@ -233,6 +233,9 @@ parser code
 
     // ==================== Validacion semantica ====================
 
+
+    // HAY QUE VALIDAR SI HAY PARENTESIS CON EXPRESIONES DENTRO
+    // 1 + (2 * 3)  -> validar 2 * 3 primero
     public void validarAsignacionTipo(String tipoEsperado, String valorAsignado, int linea, int columna) {
         if (valorAsignado == null || tipoEsperado == null) return;
 
@@ -287,26 +290,158 @@ parser code
         }
     }
 
+    boolean esCeroLiteral(String v) {
+        return "0".equals(v) || "0.0".equals(v) || "0.".equals(v) || ".0".equals(v);
+    }
 
-    /** Devuelve el tipo de una expresion o valor */
+    boolean esEnteroTipo(String t) {
+        return "int".equals(t);
+    }
+
+    boolean esFloatTipo(String t) {
+        return "float".equals(t);
+    }
+
+    boolean sonAmbosEnteros(String t1, String t2) {
+        return esEnteroTipo(t1) && esEnteroTipo(t2);
+    }
+
+
+    String tipoNumericoResultanteProducto(String tL, String tR) {
+        if ("int".equals(tL) && "int".equals(tR)) return "int";
+        if (( "int".equals(tL) || "float".equals(tL) ) &&
+            ( "int".equals(tR) || "float".equals(tR) )) return "float";
+        return "desconocido";
+    }
+
+    boolean ambosNumericos(String tL, String tR) {
+        return ( "int".equals(tL) || "float".equals(tL) ) &&
+            ( "int".equals(tR) || "float".equals(tR) );
+    }
+    // --- helpers ---
+    static class OpHit { int pos; String op; OpHit(int p,String o){pos=p;op=o;} }
+
+    boolean isBinaryMinus(String s, int i) {
+        int j = i - 1;
+        while (j >= 0 && Character.isWhitespace(s.charAt(j))) j--;
+        if (j < 0) return false; // inicio = unario
+        char L = s.charAt(j);
+        return Character.isLetterOrDigit(L) || L==')' || L==']' || L=='\'' || L=='"';
+    }
+
+    OpHit findTopLevelOp(String s, String[] ops, boolean preferLast) {
+        int depth = 0;
+        boolean inStr = false, inChar = false;
+        OpHit hit = null;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            // literales
+            if (inStr) { if (c=='"'  && s.charAt(i-1)!='\\') inStr=false; continue; }
+            if (inChar){ if (c=='\'' && s.charAt(i-1)!='\\') inChar=false; continue; }
+            if (c=='"')  { inStr=true;  continue; }
+            if (c=='\'') { inChar=true; continue; }
+
+            // paréntesis
+            if (c=='(') { depth++; continue; }
+            if (c==')') { depth--; continue; }
+            if (depth!=0) continue;
+
+            // operador de dos caracteres: //
+            if (c=='/' && i+1<s.length() && s.charAt(i+1)=='/') {
+                for (String op: ops) if (op.equals("//")) {
+                    OpHit h = new OpHit(i, "//");
+                    if (!preferLast) return h; else hit = h;
+                }
+                i++;
+                continue;
+            }
+
+            // operadores de un carac
+            for (String op: ops) if (op.length()==1 && c==op.charAt(0)) {
+                if (op.equals("-") && !isBinaryMinus(s,i)) continue; // '-' unario, ignora
+                OpHit h = new OpHit(i, op);
+                if (!preferLast) return h; else hit = h;
+            }
+        }
+        return hit;
+    }
+
+    String stripOuterParens(String s) {
+        if (s==null) return null;
+        s = s.trim();
+        while (s.length()>=2 && s.charAt(0)=='(' && s.charAt(s.length()-1)==')') {
+            int depth=0; boolean ok=true;
+            for (int i=0;i<s.length();i++){
+                char c=s.charAt(i);
+                if (c=='(') depth++;
+                else if (c==')'){ depth--; if (depth<0){ok=false;break;} }
+                if (depth==0 && i<s.length()-1){ ok=false; break; }
+            }
+            if (!ok) break;
+            s = s.substring(1,s.length()-1).trim();
+        }
+        return s;
+    }
+
+    // --- la función parcheada ---
     public String obtenerTipoExpresion(Object valor) {
         if (valor == null) return "desconocido";
-        String v = valor.toString();
+        String v = valor.toString().trim();
+        if (v.isEmpty()) return "desconocido";
+        v = stripOuterParens(v);
 
-        if (v.startsWith("f")) return "float"; // temporal de float
-        if (v.startsWith("t")) return "int";   // temporal de int
+        if (v.startsWith("f")) return "float";
+        if (v.startsWith("t")) return "int";
         if (v.matches("^-?\\d+$")) return "int";
         if (v.matches("^-?\\d*\\.\\d+$")) return "float";
         if (v.equals("true") || v.equals("false")) return "boolean";
         if (v.startsWith("\"") && v.endsWith("\"")) return "string";
-        if (v.startsWith("'") && v.endsWith("'") && v.length() == 3) return "char";
-        
-        // Buscar en tabla de simbolos
+        if (v.startsWith("'") && v.endsWith("'") && v.length()==3) return "char";
+
+        OpHit hit = findTopLevelOp(v, new String[]{"+","-"}, true);
+        if (hit != null) {
+            String L = v.substring(0, hit.pos).trim();
+            String R = v.substring(hit.pos + 1).trim();
+            String tL = obtenerTipoExpresion(L);
+            String tR = obtenerTipoExpresion(R);
+            if (hit.op.equals("+")) {
+                if (ambosNumericos(tL,tR)) return ("float".equals(tL)||"float".equals(tR)) ? "float" : "int";
+                if (("string".equals(tL) && "string".equals(tR)) ||
+                    ("char".equals(tL) && "char".equals(tR))) return "string";
+                return "desconocido";
+            } else { // '-'
+                return ambosNumericos(tL,tR) ? (("float".equals(tL)||"float".equals(tR)) ? "float" : "int") : "desconocido";
+            }
+        }
+
+        hit = findTopLevelOp(v, new String[]{"//","*","/","%"}, false);
+        if (hit != null) {
+            String L, R;
+            if ("\\/\\/".equals(hit.op)) {
+                L = v.substring(0, hit.pos).trim();
+                R = v.substring(hit.pos + 2).trim();
+            } else {
+                L = v.substring(0, hit.pos).trim();
+                R = v.substring(hit.pos + 1).trim();
+            }
+            String tL = obtenerTipoExpresion(L);
+            String tR = obtenerTipoExpresion(R);
+            switch (hit.op) {
+                case "*":  return tipoNumericoResultanteProducto(tL,tR);
+                case "/":  return ambosNumericos(tL,tR) ? "float" : "desconocido";
+                case "//": return ("int".equals(tL) && "int".equals(tR)) ? "int" : "desconocido";
+                case "%":  return ("int".equals(tL) && "int".equals(tR)) ? "int" : "desconocido";
+            }
+        }
+
         NodoToken tok = buscarID(v);
         if (tok != null) return tok.getTipo();
 
         return "desconocido";
     }
+
+
 
     /** Valida si dos tipos son compatibles para operaciones aritmeticas */
     public boolean sonTiposCompatibles(String t1, String t2) {
@@ -318,6 +453,17 @@ parser code
         return false;
     }
 
+    public boolean esIdExistente(String currentHash, String id) {
+
+        if (listaTablasSimbolos.containsKey(currentHash)) {
+            for (NodoToken existente : listaTablasSimbolos.get(currentHash)) {
+                if (existente.getId().equals(id)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 
     // ==================== Manejo de errores ====================
@@ -394,7 +540,7 @@ non terminal expresion;
 non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo_entero, asignacion_arreglo_char; 
+non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo; 
 non terminal declara_func, declara_main_func;
 
 // PRECEDENCIA
@@ -490,12 +636,67 @@ lista_sentencias_opt ::= /* vacío */
 lista_sentencias ::= sentencia
                   | lista_sentencias sentencia
                   ;
-                  
+
+asignacion_arreglo::= 
+    ID:nombreVar ASIGN ID:nombreArreglo COR_A expresion:indice COR_C
+    {:
+        NodoToken varToken = buscarID(nombreVar.toString());
+        NodoToken arregloToken = buscarID(nombreArreglo.toString());
+        var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+        var tipoArreglo = arregloToken != null ? arregloToken.getTipo() : "desconocido";
+        if(varToken != null && arregloToken != null){    
+            if(tipoVar.matches("int") && tipoArreglo.matches("arreglo_entero")){
+                System.out.println(">>> [DEBUG] Asignación válida a arreglo entero: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+            } 
+            else if(tipoVar.matches("char") && tipoArreglo.matches("arreglo_char")){
+                System.out.println(">>> [DEBUG] Asignación válida a arreglo Char: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+            }
+            else {
+                System.err.printf("\u001B[31mXXX Error semántico: Tipo incompatible en asignación a arreglo. Línea %d, columna %d.\u001B[0m%n",
+                    lastLine, lastColumn);
+                tieneErrores = true;
+            }
+        }else{
+            System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' o arreglo %s no declarados. Línea %d, columna %d.\u001B[0m%n",
+                nombreVar.toString(), nombreArreglo.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        }
+    :}
+    | ID:nombreVar ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
+        {:
+            NodoToken varToken = buscarID(nombreVar.toString());
+            var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+            if(varToken != null){
+                StringBuilder elementosStr = new StringBuilder();
+                elementosStr.append("[");
+                if (elementos != null && elementos instanceof ArrayList) {
+                    ArrayList<String> elementosLista = (ArrayList<String>) elementos;
+                    for (int i = 0; i < elementosLista.size(); i++) {
+                        if (i > 0) elementosStr.append(", ");
+                        elementosStr.append(elementosLista.get(i));
+                    }
+                    System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
+                } else {
+                    elementosStr.append("]");
+                    System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
+                }
+                
+                elementosStr.append("]");
+                
+                varToken.setValor(elementosStr.toString());
+                varToken.setLinea(String.valueOf(lastLine));
+                varToken.setColumna(String.valueOf(lastColumn));
+            }
+        :}
+    | ID:nombreVar ASIGN COR_A arreglo_char:elementos COR_C
+    ;
+
 sentencia ::= declaracion FIN_E
     | declaracion_arreglo_entero FIN_E
     | declaracion_arreglo_char FIN_E
-    | asignacion_arreglo_entero FIN_E
-    | asignacion_arreglo_char FIN_E
+    | asignacion_arreglo FIN_E
     | asignacion FIN_E
     | llamada_funcion FIN_E
     | imprimir FIN_E
@@ -527,15 +728,42 @@ parametros_llamada ::= expresion
 
 imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
 {:
-    NodoToken imp = new NodoToken();
-    imp.setTipo("llamada_funcion_sistema");
-    imp.setId("imprimir");
-    imp.setValor(e != null ? e.toString() : "");
-    imp.setLinea(String.valueOf(lastLine));
-    imp.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(imp);
-    System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + " con valor: " + imp.getValor());
+    String valorReal = "";
+    String tempValor = "";
+
+    if (e != null) {
+        if (e instanceof java.util.HashMap) {
+            valorReal = ((HashMap)e).get("valor").toString();
+            tempValor = ((HashMap)e).get("temp").toString();
+        } else {
+            valorReal = e.toString();
+            tempValor = valorReal;
+        }
+
+        NodoToken posibleVar = buscarID(valorReal);
+
+        cod3D("print " + tempValor);
+
+        NodoToken imp = new NodoToken();
+        imp.setTipo("llamada_funcion_sistema");
+        imp.setId("imprimir");
+        imp.setValor(valorReal);
+        imp.setLinea(String.valueOf(lastLine));
+        imp.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(imp);
+
+        System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + 
+                           " con valor: " + valorReal + 
+                           " (temp: " + tempValor + ")");
+    } else {
+        System.err.printf("\u001B[31mXXX Error semántico: llamada a imprimir() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
+            lastLine, lastColumn);
+        tieneErrores = true;
+    }
+
+    RESULT = null; 
 :};
+
 
 leer ::= LEER PAR_A PAR_C
 {:
@@ -598,67 +826,87 @@ lista_parametros ::= parametro
                   | lista_parametros COMA parametro
                   ;
 
+// TO-DO: AGREGAR PARAMETROS A codigo intermedio 
 parametro ::= tipo:ti ID:nombreParam
     {:
-        NodoToken param = new NodoToken();
-        param.setTipo(ti);
-        param.setId(nombreParam.toString());
-        param.setLinea(String.valueOf(lastLine));
-        param.setColumna(String.valueOf(lastColumn));
-        listaTablasSimbolos.get(currentHash).add(param);
-        System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+
+        if (esIdExistente(currentHash, nombreParam.toString())) {
+            System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
+                nombreParam.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        } else {
+            NodoToken param = new NodoToken();
+            param.setTipo(ti);
+            param.setId(nombreParam.toString());
+            param.setLinea(String.valueOf(lastLine));
+            param.setColumna(String.valueOf(lastColumn));
+            listaTablasSimbolos.get(currentHash).add(param);
+            System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+        }
     :};
+
 
 //+++++++++++++++++++++DECLARACIONES Y ASIGNACIONES+++++++++++++++
 
 // VERSIÓN SIMPLIFICADA - DECLARACIONES SEPARADAS
 declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion 
 {:
-    // Declaración SIN asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo(tipoDato);
-    declaracion.setId(nombreDeclaracion.toString());
-    declaracion.setValor(""); // Valor vacío por defecto
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
-    System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+
+    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+        System.err.printf(" \u001B[31mXXX Error semántico: Variable '%s' ya declarada en scope actual. Línea %d, columna %d.\u001B[0m%n",
+            nombreDeclaracion.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    } else {
+        // Declaración SIN asignación
+        NodoToken declaracion = new NodoToken();
+        declaracion.setTipo(tipoDato);
+        declaracion.setId(nombreDeclaracion.toString());
+        declaracion.setValor(""); // Valor vacío por defecto
+        declaracion.setLinea(String.valueOf(lastLine));
+        declaracion.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(declaracion);
+        System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+    }
 :} 
 | LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
 {:
-    // Declaración CON asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo(tipoDato);
-    declaracion.setId(nombreDeclaracion.toString());
+    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+        System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' ya declarada en ámbito actual. Línea %d, columna %d.\u001B[0m%n",
+            nombreDeclaracion.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    } else {
+        // Declaración CON asignación
+        NodoToken declaracion = new NodoToken();
+        declaracion.setTipo(tipoDato);
+        declaracion.setId(nombreDeclaracion.toString());
 
-    if (valorExpr != null) {
-        String valorReal = "";
-        String tempValor = "";
-        if (valorExpr instanceof java.util.HashMap) {
-            valorReal = ((HashMap)valorExpr).get("valor").toString();
-            tempValor = ((HashMap)valorExpr).get("temp").toString();
+        if (valorExpr != null) {
+            String valorReal = "";
+            String tempValor = "";
+            if (valorExpr instanceof java.util.HashMap) {
+                valorReal = ((HashMap)valorExpr).get("valor").toString();
+                tempValor = ((HashMap)valorExpr).get("temp").toString();
+            } else {
+                valorReal = valorExpr.toString();
+                tempValor = valorReal;
+            }
+
+            declaracion.setValor(valorReal);
+
+            cod3D(nombreDeclaracion + " = " + tempValor);
+
+            System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
+                + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
         } else {
-            valorReal = valorExpr.toString();
-            tempValor = valorReal;
+            declaracion.setValor("");
+            System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
+                + nombreDeclaracion.toString() + " en " + currentHash);
         }
 
-        validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
-
-        declaracion.setValor(valorReal);
-
-        cod3D(nombreDeclaracion + " = " + tempValor);
-
-        System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
-            + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
-    } else {
-        declaracion.setValor("");
-        System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
-            + nombreDeclaracion.toString() + " en " + currentHash);
+        declaracion.setLinea(String.valueOf(lastLine));
+        declaracion.setColumna(String.valueOf(lastColumn));
+        listaTablasSimbolos.get(currentHash).add(declaracion);
     }
-
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
 :}
 ;
 
@@ -866,15 +1114,19 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
+                    System.err.printf("\n\n\u001B[31m AQUI CAYOOO\n\n \u001B[0m%n");
+
         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
             String temp = genOperacion3D(t1, "+", t2);
             res.put("temp", temp);
-            res.put("valor", "("+v1+"+"+v2+")");
+            res.put("valor", v1+"+"+v2);
         } else {
             tieneErrores = true;
             res.put("temp","error");
             res.put("valor","error");
         }
+                            System.err.printf("\n\n\u001B[31m AQUI CAYOOO\n\n \u001B[0m%n");
+
         RESULT = res;
     :}
 | expresion_arit:e1 MENOS termino:e2
@@ -884,10 +1136,11 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
+
         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
             String temp = genOperacion3D(t1, "-", t2);
             res.put("temp", temp);
-            res.put("valor", "("+v1+"-"+v2+")");
+            res.put("valor", v1+"-"+v2);
         } else {
             tieneErrores = true;
             res.put("temp","error");
@@ -906,14 +1159,20 @@ termino ::= termino:e1 POR factor:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
-        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
-            String temp = genOperacion3D(t1, "*", t2);
-            res.put("temp", temp);
-            res.put("valor", "("+v1+"*"+v2+")");
-        } else {
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonTiposCompatibles(tt1, tt2)) {
             tieneErrores = true;
             res.put("temp","error");
             res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en multiplicación. Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "*", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "*" + v2);
         }
         RESULT = res;
     :}
@@ -924,13 +1183,95 @@ termino ::= termino:e1 POR factor:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
-        String temp = genOperacion3D(t1, "/", t2);
-        res.put("temp", temp);
-        res.put("valor", "("+v1+"/"+v2+")");
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonTiposCompatibles(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en división. Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: División por cero (literal 0/0.0). Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "/", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "/" + v2);
+        }
+        RESULT = res;
+    :}
+| termino:e1 DIV_ENT factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonAmbosEnteros(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: DIV_ENT requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: División entera por cero. Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "//", t2); 
+            res.put("temp", temp);
+            res.put("valor", v1 + "//" + v2);
+        }
+        RESULT = res;
+    :}
+| termino:e1 MOD factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+
+        String tt1 = obtenerTipoExpresion(v1);
+        String tt2 = obtenerTipoExpresion(v2);
+
+        if (!sonAmbosEnteros(tt1, tt2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: MOD requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                tt1, tt2, lastLine, lastColumn);
+        }
+        else if (esCeroLiteral(v2)) {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+            System.err.printf("\u001B[31mXXX Error semántico: Módulo por cero. Línea %d, columna %d.\u001B[0m%n",
+                lastLine, lastColumn);
+        } else {
+            String temp = genOperacion3D(t1, "%", t2);
+            res.put("temp", temp);
+            res.put("valor", v1 + "%" + v2);
+        }
         RESULT = res;
     :}
 | factor:f {: RESULT = f; :}
 ;
+
 
 // FACTORES
 factor ::= potencia:e1 POT potencia:e2
