@@ -1,5 +1,5 @@
  
- let string _s1_$ | sintactico
+ string _s1_$ | sintactico
 let bool _b1_$
 
  float func1 є char x22,char x22 э  ¿ |semantico borrar parametro
@@ -12,13 +12,13 @@ let bool _b1_$
 	let int numS = numero - 1 * numero + numero $
 	output є numS э $
 
-	let float id1float=-0.01$ |error sintactico
+	let float=-0.01$ |error sintactico
 	let char _x22_='a'$ ¡semantico x22!
-	let char _miChar_='!'$  |error sintactico
+	let char _miChar_='!'  |error sintactico
 	let char _miChar2_='!!'$ |sintactico-semantico
 	let int _x30_=-1$
 	let bool _x40_=false$
-	let char _x50_[1000] = [4,5]$
+	let char _x50_[1000] = ¿4,5?$
 	let string _x50_="Hola a todos los que est[a] haciendo un compilador nuevo¿n"$
 	decide of
 	є x22<=45 @ var>5.6 э ->  ¿  |semantico x22, var
@@ -36,14 +36,23 @@ let bool _b1_$
 		let string str2="sdff"$
 	 ?
 	end decide$ 
-	for   _i_=0  step 1 to 10 do  ¿ output є _i_ э $ ? |semantico i y j puede dar error sintactico
+	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
 	output є "Hola mundo" э $
 	input є _x22_ э $
 	return -5.6$|cambio en retorno genera semantico
  ?  
 
- 
-init void principal є  э  ¿ 
+ bool _func2_  є bool _b1_, int _i1_ э   ¿ 
+	let int $ |sintactico
+	return$ |generar error con -5.6 y con i1
+  ?  
+
+string _func3_  є  э   ¿  |semantico string
+	let string _b1_$
+	return _b1_$ 
+  ? 
+
+void principal є  э  ¿ 
 ¡
 Comentario 1
 !
@@ -56,7 +65,7 @@ Comentario 1
 	let float fl2=3.7 ^ fl1+ є 45.6 % 76 э $ |semantico literal 76
 	
 |comentario 2
-	arr = 10 - 45 * func1  є hola, true, "hola mundo", 4.5, 'a' э $ |semantico func1, retorno func1
+	arr = 10 - arr[67] * func1  є hola, true, "hola mundo", 4.5, 'a' э $ |semantico func1, retorno func1
 	fl1 = 4.5%miChar^-0.005$ |semantico miChar
 	miFunc є miFunc є  э ,'a' э $ |semantico miFunc, hola
 	let bool bl0 = 6.7 != 8.9$ |ok
@@ -64,14 +73,3 @@ Comentario 1
 	let bool bl1 = in1 >= fl1 ~ false @ Σ є func2 є 3,in1 э  > 56 э $ |semantico in1 >= fl1, func2
 	return   bl1$ |semantico
  ? 
-
-
- bool _func2_  є bool _b1_, int _i1_ э   ¿ 
-	let int x$ |sintactico
-	return$ |generar error con -5.6 y con i1
-  ?  
-
-string _func3_  є  э   ¿  |semantico string
-	let string _b1_$
-	return _b1_$ 
-  ? 

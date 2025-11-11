@@ -6,6 +6,8 @@
 	let bool _b1_$ |semantico
 	let string _s1_$ |semantico
 	_s1_ = 43.2323$
+	let int xpos = 2$ 
+	_b1_ = true$
 	input є _s1_ э $ |semantico
 	output є _b1_ э $ |semantico
 	output є true э $ |semantico
@@ -19,6 +21,7 @@ float _mi_  є int _dif_, char _otra_ э  ¿  |sintactico  э
 	let int _arr_2[67]= [1,2,3,4,5]$
 	let char _arr_6[67]= ['H','o','l','a']$
 	_arr_6[4] = '!'$
+	let char cd = 'a'$
 	let int _otra_$
 	let string _str_="Hola $~&|?$& э  mundo"$
 	let int _i_$

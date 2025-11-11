@@ -100,12 +100,12 @@ parser code
     public void imprimirTablasSimbolos(){
         try{
             FileWriter writer = new FileWriter("tokens.txt");
-            for(String key: listaTablasSimbolos.keySet()){
+        for(String key: listaTablasSimbolos.keySet()){
                 //System.out.println("------------------Tabla de simbolo : " + key);
                 writer.write("Tabla de simbolos: " + key + "\n");
                 writer.write("********Valores*********** \n");
                 //System.out.println("********Valores*********** ");
-                for(NodoToken item : listaTablasSimbolos.get(key)){
+            for(NodoToken item : listaTablasSimbolos.get(key)){
                     //System.out.println(item.toString());
                     writer.write(item.toString() + "\n");
                 }
@@ -200,7 +200,34 @@ parser code
         System.out.println(">>> [3AC] " + codigo);
     }
 
+/**
+     * Genera una operación aritmética binaria completa con temporales explícitos.
+     * Devuelve el nombre del último temporal (resultado).
+     */
+    public String genOperacion3D(String op1, String operador, String op2) {
+        String temp1, temp2, tempRes;
+        
+        // Si el operando izquierdo no es temporal, lo cargamos a uno nuevo
+        if (op1.startsWith("t") || op1.startsWith("f")) {
+            temp1 = op1;
+        } else {
+            temp1 = nuevaTempInt();
+            cod3D(temp1 + " = " + op1);
+        }
 
+        // Si el operando derecho no es temporal, lo cargamos a otro
+        if (op2.startsWith("t") || op2.startsWith("f")) {
+            temp2 = op2;
+        } else {
+            temp2 = nuevaTempInt();
+            cod3D(temp2 + " = " + op2);
+        }
+
+        // Crear resultado
+        tempRes = nuevaTempInt();
+        cod3D(tempRes + " = " + temp1 + " " + operador + " " + temp2);
+        return tempRes;
+    }
 
 
 
@@ -603,25 +630,39 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
     NodoToken declaracion = new NodoToken();
     declaracion.setTipo(tipoDato);
     declaracion.setId(nombreDeclaracion.toString());
-    
+
     if (valorExpr != null) {
-        String valorStr = valorExpr.toString();
+        String valorReal = "";
+        String tempValor = "";
+        if (valorExpr instanceof java.util.HashMap) {
+            valorReal = ((HashMap)valorExpr).get("valor").toString();
+            tempValor = ((HashMap)valorExpr).get("temp").toString();
+        } else {
+            valorReal = valorExpr.toString();
+            tempValor = valorReal;
+        }
 
-        validarAsignacionTipo(tipoDato, valorStr, lastLine, lastColumn);
+        validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
 
-        declaracion.setValor(valorStr);
-        System.out.println(">>> [DEBUG] Variable declarada CON valor: " + nombreDeclaracion.toString() + " = " + valorStr + " en " + currentHash);
+        declaracion.setValor(valorReal);
+
+        cod3D(nombreDeclaracion + " = " + tempValor);
+
+        System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
+            + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
     } else {
         declaracion.setValor("");
-        System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " + nombreDeclaracion.toString() + " en " + currentHash);
+        System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
+            + nombreDeclaracion.toString() + " en " + currentHash);
     }
-        // EYDEN: POR QUE HAY UN ELSE AQUI???
 
     declaracion.setLinea(String.valueOf(lastLine));
     declaracion.setColumna(String.valueOf(lastColumn));
     listaTablasSimbolos.get(currentHash).add(declaracion);
 :}
 ;
+
+
 declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo COR_A ENTERO COR_C ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
 {:
     // Declaración de arreglo de enteros CON asignación
@@ -691,164 +732,367 @@ arreglo_char ::= COR_A lista_char:lista COR_C {:
 :};
 
 asignacion ::= ID:nombre ASIGN expresion:valor
-    {:
-        NodoToken variable = buscarID(nombre.toString());
-        if(variable != null){
-            if(valor != null){
-                String valorStr = valor.toString();
-                validarAsignacionTipo(variable.getTipo(), valorStr, lastLine, lastColumn);
-                cod3D(nombre + " = " + valor);
-                variable.setValor(valorStr);
+{:
+    NodoToken variable = buscarID(nombre.toString());
+    if (variable != null) {
+        if (valor != null) {
+            String valorReal = "";
+            String tempValor = "";
+            if (valor instanceof java.util.HashMap) {
+                valorReal = ((HashMap)valor).get("valor").toString();
+                tempValor = ((HashMap)valor).get("temp").toString();
             } else {
-                variable.setValor("");
+                valorReal = valor.toString();
+                tempValor = valorReal;
             }
+
+            validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+            cod3D(nombre + " = " + tempValor);
+            variable.setValor(valorReal);
+
+            System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
         } else {
-            System.err.printf("\u001B[31m XXX Error semántico XXX :       La variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m %n", nombre.toString(), lastLine, lastColumn);
-            tieneErrores = true;
+            variable.setValor("");
         }
-        RESULT = valor;
-    :}
-    | ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
-    {:
-        NodoToken variable = buscarID(nombre.toString());
-        if(variable != null){
-            variable.setValor("arreglo_entero[" + valorArr + "]");
-        } else {
-            System.err.printf("\u001B[31m XXX Error semántico XXX :       La variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m %n", nombre.toString(), lastLine, lastColumn);
-            tieneErrores = true;
-        }
-    :}
-    | ID:nombre COR_A ENTERO COR_C ASIGN arreglo_char:valorChar
-    {:
-        NodoToken variable = buscarID(nombre.toString());
-        if(variable != null){
-            variable.setValor("arreglo_char");
-        } else {
-            System.err.printf("\u001B[31m XXX Error semántico XXX :       La variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m %n", nombre.toString(), lastLine, lastColumn);
-            tieneErrores = true;
-        }
-    :}
-    ;
+    } else {
+        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+            nombre.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    }
+:}
+| ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
+{:
+    NodoToken variable = buscarID(nombre.toString());
+    if (variable != null) {
+        variable.setValor("arreglo_entero[" + valorArr + "]");
+        cod3D(nombre + "[" + valorArr + "] = " + valorArr);
+    } else {
+        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+            nombre.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    }
+:}
+| ID:nombre COR_A ENTERO COR_C ASIGN CHAR:valorChar
+{:
+    NodoToken variable = buscarID(nombre.toString());
+    if (variable != null) {
+        variable.setValor("arreglo_char");
+        cod3D(nombre + "[" + valorChar + "] = arreglo_char");
+    } else {
+        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+            nombre.toString(), lastLine, lastColumn);
+        tieneErrores = true;
+    }
+:}
+;
+
+
 // EXPRESIONES
-expresion ::= expresion AND expresion
-    | expresion OR expresion
-    | NOT expresion
-    | expresion_arit op_rel expresion
-    | expresion_arit:e {: RESULT = e;:}
-    ;
+expresion ::=
+    expresion:e1 AND expresion:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "&&", ((HashMap)e2).get("temp").toString());
+        res.put("temp", temp);
+        res.put("valor", "true");
+        RESULT = res;
+    :}
+| expresion:e1 OR expresion:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "||", ((HashMap)e2).get("temp").toString());
+        res.put("temp", temp);
+        res.put("valor", "true");
+        RESULT = res;
+    :}
+| NOT expresion:e
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String opTemp = "";
+        String opValor = "";
+
+        if (e == null) {
+            System.err.println(">>> [ERROR] Expresión nula en operador NOT (línea " + lastLine + ")");
+            opTemp = "error";
+            opValor = "error";
+        } else if (e instanceof java.util.HashMap) {
+            HashMap tmp = (HashMap)e;
+            opTemp = tmp.get("temp") != null ? tmp.get("temp").toString() : "error";
+            opValor = tmp.get("valor") != null ? tmp.get("valor").toString() : "true";
+        } else {
+            opTemp = e.toString();
+            opValor = e.toString();
+        }
+
+        String temp = nuevaTempInt();
+        cod3D(temp + " = !" + opTemp);
+        res.put("temp", temp);
+        res.put("valor", "!" + opValor);
+        RESULT = res;
+    :}
+
+| expresion_arit:e1 op_rel:op expresion:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String val1 = ((HashMap)e1).get("valor").toString();
+        String val2 = ((HashMap)e2).get("valor").toString();
+        String tipo1 = obtenerTipoExpresion(val1);
+        String tipo2 = obtenerTipoExpresion(val2);
+        if (sonTiposCompatibles(tipo1, tipo2)) {
+            String t1 = ((HashMap)e1).get("temp").toString();
+            String t2 = ((HashMap)e2).get("temp").toString();
+            String temp = genOperacion3D(t1, op.toString(), t2);
+            res.put("temp", temp);
+            res.put("valor", "true");
+            RESULT = res;
+        } else {
+            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
+                tipo1, tipo2, lastLine, lastColumn);
+            tieneErrores = true;
+            RESULT = null;
+        }
+    :}
+| expresion_arit:e {: RESULT = e; :}
+;
 
 // EXPRESIONES ARITMETICAS
 expresion_arit ::= expresion_arit:e1 MAS termino:e2
-        {:
-            String tipo1 = obtenerTipoExpresion(e1);
-            String tipo2 = obtenerTipoExpresion(e2);
-            String temp;
-
-            if (sonTiposCompatibles(tipo1, tipo2)) {
-                if (tipo1.equals("float") || tipo2.equals("float")) {
-                    temp = nuevaTempFloat();
-                } else {
-                    temp = nuevaTempInt();
-                }
-                cod3D(temp + " = " + e1 + " + " + e2);
-                RESULT = temp;
-            } else {
-                System.err.printf("\u001B[31m XXX Error semántico XXX : Tipos incompatibles en suma: '%s' y '%s'. Línea %d, columna %d.\u001B[0m%n",
-                    tipo1, tipo2, lastLine, lastColumn);
-                tieneErrores = true;
-                RESULT = "error";
-            }
-        :}
-    | expresion_arit:e1 MENOS termino:e2
-        {:
-            String tipo1 = obtenerTipoExpresion(e1);
-            String tipo2 = obtenerTipoExpresion(e2);
-            String temp;
-
-            if (sonTiposCompatibles(tipo1, tipo2)) {
-                if (tipo1.equals("float") || tipo2.equals("float")) {
-                    temp = nuevaTempFloat();
-                } else {
-                    temp = nuevaTempInt();
-                }
-                cod3D(temp + " = " + e1 + " - " + e2);
-                RESULT = temp;
-            } else {
-                System.err.printf("\u001B[31m XXX Error semántico XXX : Tipos incompatibles en resta: '%s' y '%s'. Línea %d, columna %d.\u001B[0m%n",
-                    tipo1, tipo2, lastLine, lastColumn);
-                tieneErrores = true;
-                RESULT = "error";
-            }
-        :}
-    | termino:t {: RESULT = t; :}
-    ;
-
-termino ::= factor POR factor
-    | factor DIV factor
-    | factor DIV_ENT factor
-    | factor MOD factor
-    | factor:f {: RESULT = f; :}
-    ;
-
-factor ::= potencia POT potencia
-    | potencia:p {: RESULT = p; :}
-    ;
-
-potencia ::= PAR_A expresion PAR_C
-    | operando:o {: RESULT = o; :}
-    ;
-    
-//UN OPERANDO ES LA FORMA MÁS SENCILLA DE UNA OPERACIÓN
-operando ::= ENTERO:a {: 
-    RESULT = a; 
-:}
-| FLOTANTE:f {: 
-    RESULT = f; 
-:}
-| TRUE1 {: 
-    RESULT = "true"; 
-:}
-| FALSE1 {: 
-    RESULT = "false"; 
-:}
-| CADENA_CHAR:c {: 
-    RESULT = c; 
-:}
-| CADENA:s {: 
-    RESULT = s; 
-:}
-| ID:id {: 
-    RESULT = id.toString();
-    // Verificar que la variable existe
-    NodoToken variable = buscarID(id.toString());
-    if (variable == null) {
-        System.err.printf("\u001B[31m XXX Error semántico XXX :       Variable '%s' no declarada en expresión. Línea %d, columna %d.\u001B[0m %n", id.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    }
-:} 
-| llamada_funcion:llamada {: 
-    RESULT = llamada; 
-:}
-| elem_arr
-| MENOS operando:op {: 
-    if (op != null) {
-        String resultado = "-" + op.toString();
-        RESULT = resultado;
-    } else {
-        RESULT = null;
-    }
-:}
-| incrementar
-| decrementar
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
+            String temp = genOperacion3D(t1, "+", t2);
+            res.put("temp", temp);
+            res.put("valor", "("+v1+"+"+v2+")");
+        } else {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+        }
+        RESULT = res;
+    :}
+| expresion_arit:e1 MENOS termino:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
+            String temp = genOperacion3D(t1, "-", t2);
+            res.put("temp", temp);
+            res.put("valor", "("+v1+"-"+v2+")");
+        } else {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+        }
+        RESULT = res;
+    :}
+| termino:t {: RESULT = t; :}
 ;
 
+// TERMINOS
+termino ::= termino:e1 POR factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
+            String temp = genOperacion3D(t1, "*", t2);
+            res.put("temp", temp);
+            res.put("valor", "("+v1+"*"+v2+")");
+        } else {
+            tieneErrores = true;
+            res.put("temp","error");
+            res.put("valor","error");
+        }
+        RESULT = res;
+    :}
+| termino:e1 DIV factor:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+        String temp = genOperacion3D(t1, "/", t2);
+        res.put("temp", temp);
+        res.put("valor", "("+v1+"/"+v2+")");
+        RESULT = res;
+    :}
+| factor:f {: RESULT = f; :}
+;
+
+// FACTORES
+factor ::= potencia:e1 POT potencia:e2
+    {:
+        HashMap<String,String> res = new HashMap<>();
+        String v1 = ((HashMap)e1).get("valor").toString();
+        String v2 = ((HashMap)e2).get("valor").toString();
+        String t1 = ((HashMap)e1).get("temp").toString();
+        String t2 = ((HashMap)e2).get("temp").toString();
+        String temp = genOperacion3D(t1, "^", t2);
+        res.put("temp", temp);
+        res.put("valor", "pow("+v1+","+v2+")");
+        RESULT = res;
+    :}
+| potencia:p {: RESULT = p; :}
+;
+
+
+// POTENCIAS
+potencia ::= PAR_A expresion:e PAR_C {: RESULT = e; :}
+    | operando:o {: RESULT = o; :}
+;
+    
+//UN OPERANDO ES LA FORMA MÁS SENCILLA DE UNA OPERACIÓN
+operando ::= ENTERO:a {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempInt();
+    cod3D(temp + " = " + a);
+    res.put("temp", temp);
+    res.put("valor", a.toString());
+    RESULT = res;
+:}
+| FLOTANTE:f {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempFloat();
+    cod3D(temp + " = " + f);
+    res.put("temp", temp);
+    res.put("valor", f.toString());
+    RESULT = res;
+:}
+| TRUE1 {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempInt();
+    cod3D(temp + " = 1");
+    res.put("temp", temp);
+    res.put("valor", "true");
+    RESULT = res;
+:}
+| FALSE1 {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempInt();
+    cod3D(temp + " = 0");
+    res.put("temp", temp);
+    res.put("valor", "false");
+    RESULT = res;
+:}
+| CHAR:c {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempInt();
+    cod3D(temp + " = " + c);
+    res.put("temp", temp);
+    res.put("valor", c.toString());
+    RESULT = res;
+:}
+| CADENA:s {:
+    HashMap<String,String> res = new HashMap<>();
+    String temp = nuevaTempInt();
+    cod3D(temp + " = " + s);
+    res.put("temp", temp);
+    res.put("valor", s.toString());
+    RESULT = res;
+:}
+| ID:id {:
+    HashMap<String,String> res = new HashMap<>();
+    NodoToken var = buscarID(id.toString());
+    if (var == null) {
+        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no declarada.\u001B[0m%n", id.toString());
+        tieneErrores = true;
+        res.put("temp","error");
+        res.put("valor","error");
+    } else {
+        String temp = nuevaTempInt();
+        cod3D(temp + " = " + id);
+        res.put("temp", temp);
+        res.put("valor", id.toString());
+    }
+    RESULT = res;
+:}
+| elem_arr:e {:
+    HashMap<String,String> res = new HashMap<>();
+    if (e != null) {
+        String temp = nuevaTempInt();
+        cod3D(temp + " = " + e.toString());
+        res.put("temp", temp);
+        res.put("valor", e.toString());
+    } else {
+        res.put("temp","error");
+        res.put("valor","error");
+    }
+    RESULT = res;
+:}
+| MENOS operando:op {:
+    HashMap<String,String> res = new HashMap<>();
+    if (op != null && !((HashMap)op).get("temp").equals("error")) {
+        String t = ((HashMap)op).get("temp").toString();
+        String v = ((HashMap)op).get("valor").toString();
+        String temp = nuevaTempInt();
+        cod3D(temp + " = -" + t);
+        res.put("temp", temp);
+        res.put("valor", "-" + v);
+    } else {
+        res.put("temp","error");
+        res.put("valor","error");
+    }
+    RESULT = res;
+:}
+| llamada_funcion:llamada {:
+    HashMap<String,String> res = new HashMap<>();
+    if (llamada != null) {
+        String temp = nuevaTempInt();
+        cod3D(temp + " = " + llamada.toString());
+        res.put("temp", temp);
+        res.put("valor", llamada.toString());
+    } else {
+        res.put("temp","error");
+        res.put("valor","error");
+    }
+    RESULT = res;
+:}
+| incrementar:inc {:
+    HashMap<String,String> res = new HashMap<>();
+    if (inc != null) {
+        String temp = nuevaTempInt();
+        cod3D(temp + " = " + inc.toString());
+        res.put("temp", temp);
+        res.put("valor", inc.toString());
+    } else {
+        res.put("temp","error");
+        res.put("valor","error");
+    }
+    RESULT = res;
+:}
+| decrementar:dec {:
+    HashMap<String,String> res = new HashMap<>();
+    if (dec != null) {
+        String temp = nuevaTempInt();
+        cod3D(temp + " = " + dec.toString());
+        res.put("temp", temp);
+        res.put("valor", dec.toString());
+    } else {
+        res.put("temp","error");
+        res.put("valor","error");
+    }
+    RESULT = res;
+:}
+;
+
+
 // OPERADORES RELACIONALES
-op_rel ::= MAYOR
-    | MENOR
-    | MAY_IGU
-    | MEN_IGU
-    | IGUAL
-    | DIF
+op_rel ::= MAYOR    {: RESULT = ">";  :}
+    | MENOR        {: RESULT = "<";  :}
+    | MAY_IGU      {: RESULT = ">="; :}
+    | MEN_IGU      {: RESULT = "<="; :}
+    | IGUAL        {: RESULT = "=="; :}
+    | DIF          {: RESULT = "!="; :}
     ;
 
 // ESTRUCTURAS DE CONTROL 
@@ -966,7 +1210,7 @@ bucle_for ::=
     asignacion:e
     step ENTERO:valor
     direccion:dir expresion:limite
-    {:  
+    {:
         // Crear scope de el for al que se acceda
         cod3D("$t1 = " + e);
         cod3D("$t2 = " + limite);
@@ -981,8 +1225,8 @@ bucle_for ::=
         RESULT = anteriorScope;
         
     :}
-    DO bloque 
-    {:  
+    DO bloque
+    {:
         String forFinal = currentHash + "_endfor_" + contadorFor;
         cod3D("beq $t1, $t2, " + forFinal);
         System.out.println(">>> [DEBUG] ************+ DIRECCION DEL FOR: " + dir + " con valor de paso: " + valor);
