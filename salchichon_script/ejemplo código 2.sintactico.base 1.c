@@ -25,7 +25,7 @@ float _mi_  є int _dif_, char _otra_ э  ¿  |sintactico  э
 	let int _otra_$
 	let string _str_="Hola $~&|?$& э  mundo"$
 	let int _i_$
-	for  _i_=20 step -2 downto 0 do  | puede dar sintactico
+	for  _i_=20 step 2 downto 0 do  | puede dar sintactico
 	 ¿ 
 	 	let int _otra_$
 

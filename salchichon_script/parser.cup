@@ -759,6 +759,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
             nombre.toString(), lastLine, lastColumn);
         tieneErrores = true;
     }
+    RESULT = nombre;
 :}
 | ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
 {:
@@ -771,6 +772,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
             nombre.toString(), lastLine, lastColumn);
         tieneErrores = true;
     }
+        RESULT = nombre;
 :}
 | ID:nombre COR_A ENTERO COR_C ASIGN CHAR:valorChar
 {:
@@ -783,6 +785,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
             nombre.toString(), lastLine, lastColumn);
         tieneErrores = true;
     }
+    RESULT = nombre;
 :}
 ;
 
@@ -1211,13 +1214,34 @@ bucle_for ::=
     step ENTERO:valor
     direccion:dir expresion:limite
     {:
-        // Crear scope de el for al que se acceda
-        cod3D("$t1 = " + e);
-        cod3D("$t2 = " + limite);
+
         contadorFor++;
         String forScope = currentHash + "_FOR_" + contadorFor;
         cod3D(forScope + ":");
+        String temporalContador = nuevaTempInt();
+        String temporalLimite = nuevaTempInt();
+        String temporalValidacion = nuevaTempInt();
+        cod3D(temporalContador + " = " + e);
+        cod3D(temporalLimite + " = " + limite);
+        int numeroStep = Integer.parseInt(valor.toString());
+        if(numeroStep > 0){
+            if (dir.equals("downto")) {
+                cod3D(temporalValidacion + " = " + temporalContador + " < " + temporalLimite);
+            } else {
+                cod3D(temporalValidacion + " = " + temporalContador + " > " + temporalLimite);
+            }
+        } else {
+            System.err.printf("\u001B[31m XXX Error semántico XXX :       El valor de STEP debe ser mayor que 0. Línea %d, columna %d.\u001B[0m %n", lastLine, lastColumn);
+            tieneErrores = true;
+        }    
+        
         crearSubAmbito(forScope);
+        cod3D("if " + temporalValidacion + " goto " + forScope + "_endfor_" + contadorFor);
+        if (dir.equals("downto")) {
+            cod3D(e + " = " + temporalContador + " - " + valor);
+        } else {
+            cod3D(e + " = " + temporalContador + " + " + valor);
+        }
         System.out.println(">>> [DEBUG] Inicia ámbito FOR: " + forScope);
         // Guardar el scope anterior
         String anteriorScope = currentHash;
@@ -1228,14 +1252,7 @@ bucle_for ::=
     DO bloque
     {:
         String forFinal = currentHash + "_endfor_" + contadorFor;
-        cod3D("beq $t1, $t2, " + forFinal);
-        System.out.println(">>> [DEBUG] ************+ DIRECCION DEL FOR: " + dir + " con valor de paso: " + valor);
-        if(dir.equals("to")){
-            cod3D("addi $t1, $t1, "+ valor);
-        } else if(dir.equals("downto")){
-            cod3D("addi $t1, $t1, "+ valor);
-        }
-        cod3D("j " +currentHash);
+        cod3D("goto " +currentHash);
         cod3D(forFinal+ ":");
         // Recupera el scope anterior
         currentHash = (String) RESULT;
