@@ -1039,21 +1039,42 @@ asignacion ::= ID:nombre ASIGN expresion:valor
 
 
 // EXPRESIONES
-expresion ::=
-    expresion:e1 AND expresion:e2
+expresion ::= expresion:e1 AND expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "&&", ((HashMap)e2).get("temp").toString());
-        res.put("temp", temp);
-        res.put("valor", "true");
+        HashMap<String, String> res = new HashMap<>();
+        
+        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+            String temp1 = ((HashMap)e1).get("temp").toString();
+            String temp2 = ((HashMap)e2).get("temp").toString();
+            String temp = genOperacion3D(temp1, "&&", temp2);
+            res.put("temp", temp);
+            res.put("valor", "true");
+        } else {
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión AND. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+            tieneErrores = true;
+            res.put("temp", "error");
+            res.put("valor", "error");
+        }
+        
         RESULT = res;
     :}
 | expresion:e1 OR expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String temp = genOperacion3D(((HashMap)e1).get("temp").toString(), "||", ((HashMap)e2).get("temp").toString());
-        res.put("temp", temp);
-        res.put("valor", "true");
+        HashMap<String, String> res = new HashMap<>();
+        
+        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+            String temp1 = ((HashMap)e1).get("temp").toString();
+            String temp2 = ((HashMap)e2).get("temp").toString();
+            String temp = genOperacion3D(temp1, "||", temp2);
+            res.put("temp", temp);
+            res.put("valor", "true");
+        } else {
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión OR. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+            tieneErrores = true;
+            res.put("temp", "error");
+            res.put("valor", "error");
+        }
+        
         RESULT = res;
     :}
 | NOT expresion:e
@@ -1084,25 +1105,36 @@ expresion ::=
 
 | expresion_arit:e1 op_rel:op expresion:e2
     {:
-        HashMap<String,String> res = new HashMap<>();
-        String val1 = ((HashMap)e1).get("valor").toString();
-        String val2 = ((HashMap)e2).get("valor").toString();
-        String tipo1 = obtenerTipoExpresion(val1);
-        String tipo2 = obtenerTipoExpresion(val2);
-        if (sonTiposCompatibles(tipo1, tipo2)) {
-            String t1 = ((HashMap)e1).get("temp").toString();
-            String t2 = ((HashMap)e2).get("temp").toString();
-            String temp = genOperacion3D(t1, op.toString(), t2);
-            res.put("temp", temp);
-            res.put("valor", "true");
-            RESULT = res;
+        HashMap<String, String> res = new HashMap<>();
+        System.out.println(">>> [DEBUG] Evaluando expresión relacional con operadores: " + op.toString());
+        System.out.println(">>> [DEBUG] e1: " + e1);
+        System.out.println(">>> [DEBUG] e2: " + e2);
+        if (e1 != null && e2 != null) {
+            String val1 = ((HashMap)e1).get("valor").toString();
+            String val2 = ((HashMap)e2).get("valor").toString();
+            String tipo1 = obtenerTipoExpresion(val1);
+            String tipo2 = obtenerTipoExpresion(val2);
+
+            if (sonTiposCompatibles(tipo1, tipo2)) {
+                String t1 = ((HashMap)e1).get("temp").toString();
+                String t2 = ((HashMap)e2).get("temp").toString();
+                String temp = genOperacion3D(t1, op.toString(), t2);
+                res.put("temp", temp);
+                res.put("valor", "true");
+                RESULT = res;
+            } else {
+                System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
+                    tipo1, tipo2, lastLine, lastColumn);
+                tieneErrores = true;
+                RESULT = null;
+            }
         } else {
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
-                tipo1, tipo2, lastLine, lastColumn);
+            System.err.printf("\u001B[31mXXX Error semántico XXX : Expresiones nulas en operación relacional. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
             tieneErrores = true;
             RESULT = null;
         }
     :}
+
 | expresion_arit:e {: RESULT = e; :}
 ;
 
@@ -1114,7 +1146,6 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
         String v2 = ((HashMap)e2).get("valor").toString();
         String t1 = ((HashMap)e1).get("temp").toString();
         String t2 = ((HashMap)e2).get("temp").toString();
-                    System.err.printf("\n\n\u001B[31m AQUI CAYOOO\n\n \u001B[0m%n");
 
         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
             String temp = genOperacion3D(t1, "+", t2);
@@ -1125,7 +1156,6 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
             res.put("temp","error");
             res.put("valor","error");
         }
-                            System.err.printf("\n\n\u001B[31m AQUI CAYOOO\n\n \u001B[0m%n");
 
         RESULT = res;
     :}

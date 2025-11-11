@@ -52,7 +52,7 @@ string _func3_  є  э   ¿  |semantico string
 	return _b1_$ 
   ? 
 
-void principal є  э  ¿ 
+init void principal є  э  ¿ 
 ¡
 Comentario 1
 !
