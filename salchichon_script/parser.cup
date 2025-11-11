@@ -929,7 +929,8 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo COR_A ENTERO COR_C ASIG
     if (elementos != null && elementos instanceof ArrayList) {
         ArrayList<String> elementosLista = (ArrayList<String>) elementos;
         for (int i = 0; i < elementosLista.size(); i++) {
-            if (i > 0) elementosStr.append(", ");
+            if (i > 0) elementosStr.append(=======
+>>>>>>> 8fac8e7b87e91d63e503837a9811d8807c127512", ");
             elementosStr.append(elementosLista.get(i));
         }
         System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
@@ -1627,7 +1628,60 @@ bucle_for ::=
     :}
     DO bloque
     {:
-        String forFinal = currentHash + "_endfor_" + contadorFor;
+        String forFinal = currentHash + "_easignacion_arreglo::= 
+    ID:nombreVar ASIGN ID:nombreArreglo COR_A expresion:indice COR_C
+    {:
+        NodoToken varToken = buscarID(nombreVar.toString());
+        NodoToken arregloToken = buscarID(nombreArreglo.toString());
+        var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+        var tipoArreglo = arregloToken != null ? arregloToken.getTipo() : "desconocido";
+        if(varToken != null && arregloToken != null){    
+            if(tipoVar.matches("int") && tipoArreglo.matches("arreglo_entero")){
+                System.out.println(">>> [DEBUG] Asignación válida a arreglo entero: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+            } 
+            else if(tipoVar.matches("char") && tipoArreglo.matches("arreglo_char")){
+                System.out.println(">>> [DEBUG] Asignación válida a arreglo Char: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+            }
+            else {
+                System.err.printf("\u001B[31mXXX Error semántico: Tipo incompatible en asignación a arreglo. Línea %d, columna %d.\u001B[0m%n",
+                    lastLine, lastColumn);
+                tieneErrores = true;
+            }
+        }else{
+            System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' o arreglo %s no declarados. Línea %d, columna %d.\u001B[0m%n",
+                nombreVar.toString(), nombreArreglo.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        }
+    :}
+    | ID:nombreVar ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
+        {:
+            NodoToken varToken = buscarID(nombreVar.toString());
+            var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+            if(varToken != null){
+                StringBuilder elementosStr = new StringBuilder();
+                elementosStr.append("[");
+                if (elementos != null && elementos instanceof ArrayList) {
+                    ArrayList<String> elementosLista = (ArrayList<String>) elementos;
+                    for (int i = 0; i < elementosLista.size(); i++) {
+                        if (i > 0) elementosStr.append(", ");
+                        elementosStr.append(elementosLista.get(i));
+                    }
+                    System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
+                } else {
+                    elementosStr.append("]");
+                    System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
+                }
+                
+                elementosStr.append("]");
+                
+                varToken.setValor(elementosStr.toString());
+                varToken.setLinea(String.valueOf(lastLine));
+                varToken.setColumna(String.valueOf(lastColumn));
+            }
+        :}
+    | ID:nombreVar ASIGN COR_A arreglo_char:elementos COR_Cndfor_" + contadorFor;
         cod3D("goto " +currentHash);
         cod3D(forFinal+ ":");
         // Recupera el scope anterior
