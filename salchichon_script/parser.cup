@@ -1388,13 +1388,16 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                 ;
 
 
-declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A expresion BLO_C ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
+declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A expresion:tam BLO_C ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
                                 {:
                                     // Declaración de arreglo de enteros CON asignación
                                     NodoToken declaracion = new NodoToken();
                                     declaracion.setTipo("arreglo_entero");
                                     declaracion.setId(nombreArreglo.toString());
                                     
+                                    String baseTemp = "base_" + nombreArreglo;
+                                    cod3D(baseTemp + " = HP"); // base del arreglo
+
                                     StringBuilder elementosStr = new StringBuilder();
                                     elementosStr.append("[");
                                     
@@ -1403,6 +1406,8 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A expresion BLO_C A
                                         for (int i = 0; i < elementosLista.size(); i++) {
                                             if (i > 0) elementosStr.append(", ");
                                             elementosStr.append(elementosLista.get(i));
+                                            cod3D("heap[HP] = " + elementosLista.get(i).toString());
+                                            cod3D("HP = HP + 1");
                                         }
                                         System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
                                     } else {
@@ -1418,15 +1423,44 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A expresion BLO_C A
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
                                     System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
                                 :}
-                                | LET tipo ID:nombreArreglo BLO_A expresion BLO_C {:
-                                    System.out.println(">>> [DEBUG] Declaración de arreglo de enteros SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
-                                    NodoToken declaracion = new NodoToken();
-                                    declaracion.setTipo("arreglo_entero");
-                                    declaracion.setId(nombreArreglo.toString());
-                                    declaracion.setValor("arreglo_entero"); // Valor por defecto
-                                    declaracion.setLinea(String.valueOf(lastLine));
-                                    declaracion.setColumna(String.valueOf(lastColumn));
-                                    listaTablasSimbolos.get(currentHash).add(declaracion);
+                                | LET tipo:tipo ID:nombreArreglo BLO_A expresion:tam BLO_C {:
+                                    if (tipo == "char") {
+                                        System.out.println(">>> [DEBUG] Declaración de arreglo de CHARES SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
+                                        NodoToken declaracion = new NodoToken();
+                                        String baseTemp = "base_" + nombreArreglo;
+                                        cod3D(baseTemp + " = HP");
+                                        HashMap<String, String> info = (HashMap<String, String>) tam;
+                                        // convertir el tamaño a entero si viene como expresión
+                                        String tamStr = info.get("valor").toString();
+                                        cod3D("HP = HP + " + tamStr);  // reservar espacio vacío
+                                        declaracion.setTipo("arreglo_char");
+                                        declaracion.setId(nombreArreglo.toString());
+                                        declaracion.setValor(""); // Valor por defecto
+                                        declaracion.setLinea(String.valueOf(lastLine));
+                                        declaracion.setColumna(String.valueOf(lastColumn));
+                                        listaTablasSimbolos.get(currentHash).add(declaracion);
+                                        
+                                    }else if(tipo == "int"){
+                                        System.out.println(">>> [DEBUG] Declaración de arreglo de enteros SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
+                                        NodoToken declaracion = new NodoToken();
+                                        String baseTemp = "base_" + nombreArreglo;
+                                        cod3D(baseTemp + " = HP");
+                                        HashMap<String, String> info = (HashMap<String, String>) tam;
+                                        // convertir el tamaño a entero si viene como expresión
+                                        String tamStr = info.get("valor").toString();
+                                        cod3D("HP = HP + " + tamStr);  // reservar espacio vacío
+                                        declaracion.setTipo("arreglo_entero");
+                                        declaracion.setId(nombreArreglo.toString());
+                                        declaracion.setValor(""); // Valor por defecto
+                                        declaracion.setLinea(String.valueOf(lastLine));
+                                        declaracion.setColumna(String.valueOf(lastColumn));
+                                        listaTablasSimbolos.get(currentHash).add(declaracion);
+                                    }
+                                    else{
+                                        System.err.printf("\u001B[31mXXX Error semántico: Tipo '%s' no válido para arreglo de enteros. Línea %d, columna %d.\u001B[0m%n",
+                                            tipo.toString(), lastLine, lastColumn);
+                                        tieneErrores = true;
+                                    }
                                 :}
                             ;
 
@@ -1448,11 +1482,6 @@ declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A expresion BLO_C
                                     declaracion.setLinea(String.valueOf(lastLine));
                                     declaracion.setColumna(String.valueOf(lastColumn));
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
-                                :}
-                                |LET tipo ID:nombreArregloChar BLO_A ENTEROPO BLO_C
-                                {:
-                                    System.out.println(">>> [DEBUG] Declaración de arreglo de chars SIN asignación: " + nombreArregloChar.toString() + " en " + currentHash);
-                                    
                                 :}
                             ;
 
