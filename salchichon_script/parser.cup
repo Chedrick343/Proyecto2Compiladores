@@ -8,53 +8,72 @@ import java.io.FileWriter;
 // PARSER
 parser code
 {:
+    /**
+    * Representa una entrada en la tabla de símbolos (token semántico) de Salchichón Script.
+    * Guarda tipo, identificador, valor y metadatos de posición (línea/columna).
+    */
     public class NodoToken{
         String tipo;
         String id;
         String valor;
         String linea;
         String columna;
+
+        /** Crea un nodo vacío (campos nulos). */
         public NodoToken() {
         }
 
+        /** @return el tipo semántico del símbolo. */
         public String getTipo() {
             return tipo;
         }
 
+        /** @param tipo nuevo tipo semántico. */
         public void setTipo(String tipo) {
             this.tipo = tipo;
         }
+
+        /** @return el identificador (nombre) del símbolo. */
         public String getId() {
             return id;
         }
 
+        /** @param id nuevo identificador. */
         public void setId(String id) {
             this.id = id;
         }
 
+        /** @return el valor asociado al símbolo. */
         public String getValor() {
             return valor;
         }
 
+        /** @param valor nuevo valor semántico. */
         public void setValor(String valor) {
             this.valor = valor;
         }
 
+        /** @return línea 1-based en el archivo fuente. */
         public String getLinea() {
             return linea;
         }
 
+        /** @param linea línea 1-based en el archivo fuente. */
         public void setLinea(String linea) {
             this.linea = linea;
         }
 
+        /** @return columna 1-based en el archivo fuente. */
         public String getColumna() {
             return columna;
         }
 
+        /** @param columna columna 1-based en el archivo fuente. */
         public void setColumna(String columna) {
             this.columna = columna;
         }
+
+        /** @return representación legible del símbolo y sus metadatos. */
         @Override
         public String toString() {
             return "NodoToken \n{\n" +
@@ -76,6 +95,12 @@ parser code
     int contadorCase = 0;
     int contadorElse = 0;
 
+    /**
+    * Inicializa la tabla de símbolos global y registra funciones de sistema
+    * disponibles por defecto (imprimir/leer).
+    * Efectos: Crea el scope global, lo establece como actual y agrega
+    * dos entradas de tipo "funcion_sistema".
+    */
     public void inicarTS() {
         listaTablasSimbolos.put(globalHash, new ArrayList<>());
         currentHash = globalHash;
@@ -97,6 +122,12 @@ parser code
         listaTablasSimbolos.get(globalHash).add(readFunc);
     }
 
+    /**
+    * Vuelca todas las tablas de símbolos a un archivo de texto (tokens.txt)
+    * en formato legible.
+    * Efectos: Escribe en disco. No altera el estado semántico.
+    * Errores: Registra en consola si no se puede escribir el archivo.
+    */
     public void imprimirTablasSimbolos(){
         try{
             FileWriter writer = new FileWriter("tokens.txt");
@@ -118,6 +149,12 @@ parser code
         }
     }
     
+    /**
+    * Busca el tipo asociado a un identificador dentro de una tabla específica.
+    * @param tabla tabla de símbolos a inspeccionar.
+    * @param id    identificador cuyo tipo se desea recuperar (comparado contra {token.valor}).
+    * @return tipo encontrado o cadena vacía si no existe coincidencia.
+    */
     public String getTipo(ArrayList<NodoToken> tabla, String id){
         String tipo = "";
         for(NodoToken token : tabla){
@@ -129,6 +166,11 @@ parser code
         return tipo;
     }
 
+    /**
+    * Busca un identificador primero en el ámbito actual y luego en el global.
+    * @param id identificador (nombre) a buscar.
+    * @return el {NodoToken} si existe; de lo contrario {null}.
+    */
     public NodoToken buscarID(String id){
         System.out.println(">>> [DEBUG] Buscando ID: '" + id + "' en ámbito: " + currentHash);
         
@@ -153,9 +195,11 @@ parser code
     }
 
     /**
-     * Crea un nuevo scope (tabla de símbolos) heredando las variables visibles del scope su[perior.
-     * @param nombreScope Nombre único del nuevo ámbito.
-     */
+    * Crea un nuevo ámbito (scope) copiando todos los símbolos visibles del
+    * ámbito actual, y lo registra en {#listaTablasSimbolos}.
+    * @param nombreScope nombre único del nuevo ámbito.
+    * Efectos: No cambia {#currentHash}; solo registra el nuevo scope con símbolos heredados.
+    */
     public void crearSubAmbito(String nombreScope) {
         ArrayList<NodoToken> nuevo = new ArrayList<>();
 
@@ -179,31 +223,43 @@ parser code
     }
 
 
-    // TO-DO: GENERACION DE CODIGO INTERMEDIO: CODIGO 3 DIRECCIONES 
     StringBuilder codigoIntermedio = new StringBuilder();
     int tempCont = 0;
     int floatTempCont = 0;
     int labelCont = 0;
 
-    // para enteros
+    /**
+    * Genera el nombre de un temporal entero único (t1, t2, ...).
+    * @return identificador del temporal generado.
+    */
     String nuevaTempInt() {
         return "t" + (++tempCont);
     }
 
-    // para flotantes
+    /**
+    * Genera el nombre de un temporal de punto flotante único (f1, f2, ...).
+    * @return identificador del temporal generado.
+    */
     String nuevaTempFloat() {
         return "f" + (++floatTempCont);
     }
 
+    /**
+    * Añade una línea de código de tres direcciones al buffer.
+    * @param codigo instrucción 3AC ya formateada.
+    */
     void cod3D(String codigo) {
         codigoIntermedio.append(codigo).append("\n");
         System.out.println(">>> [3AC] " + codigo);
     }
 
-/**
-     * Genera una operación aritmética binaria completa con temporales explícitos.
-     * Devuelve el nombre del último temporal (resultado).
-     */
+    /**
+    * Emite 3AC para una operación binaria con carga de operandos a temporales si hace falta.
+    * @param op1      operando izquierdo (temporal existente o nombre/valor literal).
+    * @param operador símbolo del operador (p.ej., "+", "-", "*", "/", "%", "&&", "||", "^").
+    * @param op2      operando derecho (temporal existente o nombre/valor literal).
+    * @return nombre del temporal resultado.
+    */
     public String genOperacion3D(String op1, String operador, String op2) {
         String temp1, temp2, tempRes;
         
@@ -233,6 +289,15 @@ parser code
 
     // ==================== Validacion semantica ====================
 
+    /**
+    * Valida que el valor literal/asignado sea compatible con el tipo declarado.
+    * @param tipoEsperado tipo declarado de la variable destino (int, float, boolean, char, string).
+    * @param valorAsignado representación textual del valor/expresión ya reducida.
+    * @param linea línea de la fuente (1-based) para diagnóstico.
+    * @param columna columna de la fuente (1-based) para diagnóstico.
+    * 
+    * Efectos: Marca {#tieneErrores} y escribe errores si hay incompatibilidades.
+    */
     public void validarAsignacionTipo(String tipoEsperado, String valorAsignado, int linea, int columna) {
         if (valorAsignado == null || tipoEsperado == null) return;
 
@@ -287,23 +352,33 @@ parser code
         }
     }
 
+    /** @return {true} si el literal representa cero (entero o flotante simple). */
     boolean esCeroLiteral(String v) {
         return "0".equals(v) || "0.0".equals(v) || "0.".equals(v) || ".0".equals(v);
     }
 
+    /** @return {true} si el tipo es exactamente "int". */
     boolean esEnteroTipo(String t) {
         return "int".equals(t);
     }
-
+    
+    /** @return {true} si el tipo es exactamente "float". */
     boolean esFloatTipo(String t) {
         return "float".equals(t);
     }
 
+    /** @return {true} si ambos tipos son enteros. */
     boolean sonAmbosEnteros(String t1, String t2) {
         return esEnteroTipo(t1) && esEnteroTipo(t2);
     }
 
 
+    /**
+    * Regla de promoción de tipos para multiplicación.
+    * @param tL tipo del operando izquierdo.
+    * @param tR tipo del operando derecho.
+    * @return "int" si ambos son int; "float" si hay mezcla int/float; "desconocido" en otro caso.
+    */
     String tipoNumericoResultanteProducto(String tL, String tR) {
         if ("int".equals(tL) && "int".equals(tR)) return "int";
         if (( "int".equals(tL) || "float".equals(tL) ) &&
@@ -311,13 +386,30 @@ parser code
         return "desconocido";
     }
 
+    /**
+    * @return {true} si ambos tipos son numéricos (int o float).
+    */
     boolean ambosNumericos(String tL, String tR) {
         return ( "int".equals(tL) || "float".equals(tL) ) &&
             ( "int".equals(tR) || "float".equals(tR) );
     }
     // --- helpers ---
-    static class OpHit { int pos; String op; OpHit(int p,String o){pos=p;op=o;} }
 
+    /**
+    * Hit de operador encontrado al parsear una expresión a nivel tope.
+    * Contiene posición (índice en la cadena) y el lexema del operador.
+    */
+    static class OpHit { 
+        int pos; String op; 
+        OpHit(int p, String o) { pos = p; op = o; } 
+    }
+
+    /**
+    * Determina si el '-' en la posición dada actúa como binario (resta) y no como unario (negación).
+    * @param s cadena de la expresión.
+    * @param i índice del carácter '-'.
+    * @return {true} si se interpreta como binario; {false} si es unario.
+    */
     boolean isBinaryMinus(String s, int i) {
         int j = i - 1;
         while (j >= 0 && Character.isWhitespace(s.charAt(j))) j--;
@@ -326,6 +418,14 @@ parser code
         return Character.isLetterOrDigit(L) || L==')' || L==']' || L=='\'' || L=='"';
     }
 
+    /**
+    * Busca el primer (o último) operador de un conjunto permitido al "nivel tope" (no dentro de paréntesis
+    * ni dentro de literales de cadena/carácter).
+    * @param s           expresión completa.
+    * @param ops         lista de operadores a detectar (p.ej. {"+","-"}).
+    * @param preferLast  si {true}, devuelve el último hallado; si {false}, el primero.
+    * @return {OpHit} con posición y operador, o {null} si no encuentra.
+    */
     OpHit findTopLevelOp(String s, String[] ops, boolean preferLast) {
         int depth = 0;
         boolean inStr = false, inChar = false;
@@ -364,6 +464,12 @@ parser code
         return hit;
     }
 
+    /**
+    * Elimina paréntesis exteriores que envuelven completamente la expresión (p. ej. "(1+(2*3))" -> "1+(2*3)").
+    * Respeta el balanceo interno.
+    * @param s expresión original.
+    * @return expresión sin paréntesis exteriores redundantes.
+    */
     String stripOuterParens(String s) {
         if (s==null) return null;
         s = s.trim();
@@ -381,7 +487,23 @@ parser code
         return s;
     }
 
-    // --- la función parcheada ---
+    /**
+    * Inferencia de tipo para una expresión textual ya tokenizada/reducida.
+    * Soporta literales, identificadores, suma/resta, producto/división/módulo,
+    * división entera (//) y potencia (^), con respeto a precedencias mediante
+    * búsqueda de operadores a nivel tope.
+    * @param valor objeto cuya representación {toString()} se interpreta como expresión.
+    * @return tipo inferido: "int", "float", "boolean", "string", "char" o "desconocido".
+    * Reglas relevantes:
+    * <ul>
+    *   <li>{int / int -> float}</li>
+    *   <li>{int // int -> int} (solo si ambos enteros)</li>
+    *   <li>{int % int -> int} (solo si ambos enteros)</li>
+    *   <li>{int * int -> int}, mixto con float -> {float}</li>
+    *   <li>{^} devuelve {int} si ambos son int, {float} si ambos son float, {desconocido} en mezcla</li>
+    * </ul>
+    * También consulta {#buscarID(String)} si la expresión es un identificador simple.
+    */
     public String obtenerTipoExpresion(Object valor) {
         if (valor == null) return "desconocido";
         String v = valor.toString().trim();
@@ -446,7 +568,14 @@ parser code
 
 
 
-    /** Valida si dos tipos son compatibles para operaciones aritmeticas */
+/**
+ * Verifica compatibilidad de tipos para operadores aritméticos/concatenación simples.
+ * @param t1 tipo izquierdo.
+ * @param t2 tipo derecho.
+ * @return {true} si ambos tipos son iguales y pertenecen al conjunto soportado
+ *         (int, float, string, char, boolean); en otro caso {false}.
+ * Nota: No realiza promoción numérica; úsese junto con reglas específicas.
+ */
     public boolean sonTiposCompatibles(String t1, String t2) {
         if (t1.equals("int") && t2.equals("int")) return true;
         if (t1.equals("float") && t2.equals("float")) return true;
@@ -456,6 +585,12 @@ parser code
         return false;
     }
 
+    /**
+    * Indica si un identificador ya existe en una tabla de símbolos dada.
+    * @param currentHash hash/nombre del scope a revisar.
+    * @param id          identificador a buscar.
+    * @return {true} si existe una entrada con ese id; de lo contrario {false}.
+    */
     public boolean esIdExistente(String currentHash, String id) {
 
         if (listaTablasSimbolos.containsKey(currentHash)) {
@@ -477,7 +612,12 @@ parser code
     private int lastLine = 1;
     private int lastColumn = 1;
 
-    // Guardar última posición válida después de cada token leído
+    /**
+    * Intercepta el escáner para recordar la última posición válida (línea/columna)
+    * y así poder reportar errores más precisos cuando el símbolo sea nulo.
+    * @return símbolo leído por el escáner subyacente.
+    * @throws Exception propagadas por el escáner.
+    */
     @Override
     public Symbol scan() throws Exception {
         Symbol sym = super.scan();
@@ -489,6 +629,12 @@ parser code
     }
 
     // Errores recuperables
+
+    /**
+    * Manejador de errores sintácticos recuperables.
+    * Marca {#tieneErrores} y reporta el token con su posición aproximada.
+    * @param s símbolo problemático (puede ser nulo).
+    */
     @Override
     public void syntax_error(Symbol s) {
         tieneErrores = true; 
@@ -500,6 +646,13 @@ parser code
     }
 
     // Errores no recuperables
+
+    /**
+    * Manejador de errores sintácticos no recuperables.
+    * Marca {#tieneErrores} y lanza la condición tras imprimir diagnóstico.
+    * @param s símbolo problemático (puede ser nulo).
+    * @throws Exception para detener el parseo según la política del parser.
+    */
     @Override
     public void unrecovered_syntax_error(Symbol s) throws Exception {
         tieneErrores = true; 

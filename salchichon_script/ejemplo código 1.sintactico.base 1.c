@@ -12,17 +12,10 @@ let bool _b1_$
 	let int numS = numero - 1 * numero + numero $
 	output є numS э $
 
-<<<<<<< HEAD
 	let float=-0.01$ |error sintactico
-	let char x22='a'$ ¡semantico x22!
+	let char _x22_='a'$ ¡semantico x22!
 	let char _miChar_='!'  |error sintactico
 	let char _miChar2_='!!'$ |sintactico-semantico
-=======
-	|let float=-0.01$ |error sintactico
-	|let char x22='a'$ ¡semantico x22!
-	|let char _miChar_='!'  |error sintactico
-	|let char _miChar2_='!!'$ |sintactico-semantico
->>>>>>> 8fac8e7b87e91d63e503837a9811d8807c127512
 	let int _x30_=-1$
 	let bool _x40_=false$
 	let char _x50_[1000] = ¿4,5?$
@@ -59,7 +52,7 @@ string _func3_  є  э   ¿  |semantico string
 	return _b1_$ 
   ? 
 
-init void principal є  э  ¿ 
+void principal є  э  ¿ 
 ¡
 Comentario 1
 !
