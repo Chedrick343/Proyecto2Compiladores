@@ -459,7 +459,7 @@ public void inicarTS() {
         char L = s.charAt(j);
         return Character.isLetterOrDigit(L) || L==')' || L==']' || L=='\'' || L=='"';
     }
-
+    
     /*
     * Busca el primer (o último) operador de un conjunto permitido al "nivel tope" (no dentro de paréntesis
     * ni dentro de literales de cadena/carácter).
@@ -481,7 +481,7 @@ public void inicarTS() {
             if (c=='"')  { inStr=true;  continue; }
             if (c=='\'') { inChar=true; continue; }
 
-            // paréntesis
+            //' paréntesis
             if (c=='(') { depth++; continue; }
             if (c==')') { depth--; continue; }
             if (depth!=0) continue;
@@ -738,7 +738,7 @@ non terminal expresion;
 non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo, elemento_arreglo; 
+non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo, elemento_arreglo, asignacion_elemento; 
 non terminal declara_func, declara_main_func;
 
 // PRECEDENCIA
@@ -845,12 +845,24 @@ asignacion_arreglo::=
             var tipoArreglo = arregloToken != null ? arregloToken.getTipo() : "desconocido";
             if(varToken != null && arregloToken != null){    
                 if(tipoVar.matches("int") && tipoArreglo.matches("arreglo_entero")){
-                    System.out.println(">>> [DEBUG] Asignación válida a arreglo entero: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
-                    varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+                    String t1 = nuevaTempInt();
+                    String t2 = nuevaTempInt();
+                    String t3 = nuevaTempInt();
+                    
+                    cod3D(t1 + " = " + indice + " * 4"); // es 4 porque estamos guardando enteros
+                    cod3D(t2 + " = base_" + nombreArreglo + " + " + t1);
+                    cod3D(t3 + " = heap[" + t2 + "]");
+                    cod3D(nombreVar + " = " + t3);
                 } 
                 else if(tipoVar.matches("char") && tipoArreglo.matches("arreglo_char")){
-                    System.out.println(">>> [DEBUG] Asignación válida a arreglo Char: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
-                    varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+                    String t1 = nuevaTempInt();
+                    String t2 = nuevaTempInt();
+                    String t3 = nuevaTempInt();
+
+                    cod3D(t1 + " = " + indice + " * 1"); //es uno porque lo hacemos para ascii que cada uno mide 8 bits
+                    cod3D(t2 + " = base_" + nombreArreglo + " + " + t1);
+                    cod3D(t3 + " = heap[" + t2 + "]");
+                    cod3D(nombreVar + " = " + t3);
                 }
                 else {
                     System.err.printf("\u001B[31mXXX Error semántico: Tipo incompatible en asignación a arreglo. Línea %d, columna %d.\u001B[0m%n",
@@ -867,14 +879,20 @@ asignacion_arreglo::=
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
             var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
-            if(varToken != null){
+            System.out.println("**********TRABAJANDO************+");
+            if(varToken != null && varToken.getTipo() == "arreglo_entero"){
+                
                 StringBuilder elementosStr = new StringBuilder();
                 elementosStr.append("[");
+                String baseTemp = "base_" + nombreVar;
+                String nuevoTemporal = nuevaTempInt();
+                cod3D(nuevoTemporal +" = " + baseTemp);
                 if (elementos != null && elementos instanceof ArrayList) {
                     ArrayList<String> elementosLista = (ArrayList<String>) elementos;
                     for (int i = 0; i < elementosLista.size(); i++) {
-                        if (i > 0) elementosStr.append(", ");
-                        elementosStr.append(elementosLista.get(i));
+                        String valor = elementosLista.get(i);
+                        cod3D("heap["+nuevoTemporal+"] = " + valor);
+                        cod3D(nuevoTemporal +" = "+ nuevoTemporal + " + 1");
                     }
                     System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
                 } else {
@@ -887,6 +905,9 @@ asignacion_arreglo::=
                 varToken.setValor(elementosStr.toString());
                 varToken.setLinea(String.valueOf(lastLine));
                 varToken.setColumna(String.valueOf(lastColumn));
+            }else{
+                System.err.printf("\u001B[31mXXX Error semántico: No puedes asignar listas a variables que no lo son. Variable '%s' o arreglo %s no declarados. Línea %d, columna %d.\u001B[0m%n",
+                    nombreVar.toString(), varToken.getId(), lastLine, lastColumn);
             }
         :}
     | ID:nombreVar ASIGN arreglo_char:elementos
@@ -894,6 +915,18 @@ asignacion_arreglo::=
         NodoToken varToken = buscarID(nombreVar.toString());
         var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
         if(varToken != null){
+            String baseTemp = "base_" + nombreVar;
+            String nuevoTemporal = nuevaTempInt();
+            cod3D(nuevoTemporal+" = " + baseTemp);
+            String valorStr = elementos.toString();  // viene algo como ['H','O','L','A']
+            for (int i = 0; i < valorStr.length(); i++) {
+                char c = valorStr.charAt(i);
+                if (c == '\'' || c == '[' || c == ']' || c == ',' || c == ' ') continue; // omitir símbolos
+                int ascii = (int) c;  // obtener código ASCII
+                cod3D("heap["+nuevoTemporal+"] = " + ascii + "  // '" + c + "'");
+                cod3D(nuevoTemporal + " = " + nuevoTemporal + " + 1");
+            }//'
+
             varToken.setValor(elementos.toString());
             varToken.setLinea(String.valueOf(lastLine));
             varToken.setColumna(String.valueOf(lastColumn));
@@ -1484,6 +1517,15 @@ declaracion_arreglo_char ::= LET tipo:tip ID:nombreArregloChar BLO_A expresion B
                                         
                                         if (valoresChar != null) {
                                             String valorStr = valoresChar.toString();
+                                            String baseTemp = "base_" + nombreArregloChar;
+                                            cod3D(baseTemp + " = HP");
+                                            for (int i = 0; i < valorStr.length(); i++) {
+                                                char c = valorStr.charAt(i);
+                                                if (c == '\'' || c == '[' || c == ']' || c == ',' || c == ' ') continue;
+                                                int ascii = (int) c;
+                                                cod3D("heap[HP] = " + ascii);
+                                                cod3D("HP = HP + 1");
+                                            }//'
                                             declaracion.setValor(valorStr);
                                             System.out.println(">>> [DEBUG] Arreglo de chars declarado CON valor: " + nombreArregloChar.toString() + " = " + valorStr + " en " + currentHash);
                                         } else {
