@@ -837,7 +837,7 @@ lista_sentencias ::= sentencia
                   ;
 
 asignacion_arreglo::= 
-    ID:nombreVar ASIGN ID:nombreArreglo BLO_A expresion:indice BLO_C
+    ID:nombreVar ASIGN ID:nombreArreglo BLO_A ENTEROPO:indice BLO_C
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
             NodoToken arregloToken = buscarID(nombreArreglo.toString());
@@ -904,7 +904,18 @@ asignacion_arreglo::=
         }
     :}
     ;
-elemento_arreglo ::= ID BLO_A ENTEROPO BLO_C
+elemento_arreglo ::= ID:nombreArreglo BLO_A expresion:tamano BLO_C 
+    {:
+        NodoToken arregloToken = buscarID(nombreArreglo.toString());
+        if(arregloToken != null){
+            System.out.println(">>> [DEBUG] Acceso a elemento de arreglo: " + nombreArreglo + "[" + tamano + "]");
+            arregloToken.setValor(nombreArreglo.toString() + "[" + tamano.toString() + "]");
+        }else{
+            System.err.printf("\u001B[31mXXX Error semántico: Arreglo '%s' no declarado. Línea %d, columna %d.\u001B[0m%n",
+                nombreArreglo.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        }
+    :}
 ;
 sentencia ::= declaracion FIN_E
     | declaracion_arreglo_entero FIN_E
@@ -1361,7 +1372,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                 ;
 
 
-declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A ENTERO BLO_C ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
+declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A expresion BLO_C ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
                                 {:
                                     // Declaración de arreglo de enteros CON asignación
                                     NodoToken declaracion = new NodoToken();
@@ -1391,10 +1402,19 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A ENTERO BLO_C ASIG
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
                                     System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
                                 :}
-                                | LET tipo ID:nombreArreglo BLO_A ENTEROPO BLO_C
+                                | LET tipo ID:nombreArreglo BLO_A expresion BLO_C {:
+                                    System.out.println(">>> [DEBUG] Declaración de arreglo de enteros SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
+                                    NodoToken declaracion = new NodoToken();
+                                    declaracion.setTipo("arreglo_entero");
+                                    declaracion.setId(nombreArreglo.toString());
+                                    declaracion.setValor("arreglo_entero"); // Valor por defecto
+                                    declaracion.setLinea(String.valueOf(lastLine));
+                                    declaracion.setColumna(String.valueOf(lastColumn));
+                                    listaTablasSimbolos.get(currentHash).add(declaracion);
+                                :}
                             ;
 
-declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C ASIGN arreglo_char:valoresChar
+declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A expresion BLO_C ASIGN arreglo_char:valoresChar
                                 {:
                                     // Declaración de arreglo de chars CON asignación
                                     NodoToken declaracion = new NodoToken();
@@ -1413,15 +1433,10 @@ declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C AS
                                     declaracion.setColumna(String.valueOf(lastColumn));
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
                                 :}
-                                | LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C
+                                |LET tipo ID:nombreArregloChar BLO_A ENTEROPO BLO_C
                                 {:
-                                    NodoToken declaracion = new NodoToken();
-                                    declaracion.setTipo("arreglo_char");
-                                    declaracion.setId(nombreArregloChar.toString());
+                                    System.out.println(">>> [DEBUG] Declaración de arreglo de chars SIN asignación: " + nombreArregloChar.toString() + " en " + currentHash);
                                     
-                                    declaracion.setLinea(String.valueOf(lastLine));
-                                    declaracion.setColumna(String.valueOf(lastColumn));
-                                    listaTablasSimbolos.get(currentHash).add(declaracion);
                                 :}
                             ;
 
@@ -1953,7 +1968,19 @@ operando ::= ENTERO:a
             }
             RESULT = res;
         :}
-    | elemento_arreglo
+    | elemento_arreglo:e {:
+        HashMap<String,String> res = new HashMap<>();
+        if (e != null) {
+            String temp = nuevaTempInt();
+            cod3D(temp + " = " + e.toString());
+            res.put("temp", temp);
+            res.put("valor", e.toString());
+        } else {
+            res.put("temp","error");
+            res.put("valor","error");
+        }
+        RESULT = res;
+    :}
     | MENOS operando:op 
         {:
             HashMap<String,String> res = new HashMap<>();
