@@ -11,7 +11,8 @@ let bool _b1_$
 	output є letra э $
 	let int numS = numero - 1 * numero + numero $
 	output є numS э $
-
+ 	let char arr[100]$
+	arr[0] = ['b','b','b','b']$
 	let float=-0.01$ |error sintactico
 	let char _x22_='a'$ ¡semantico x22!
 	let char _miChar_='!'  |error sintactico

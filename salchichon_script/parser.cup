@@ -132,7 +132,7 @@ parser code
         try{
             FileWriter writer = new FileWriter("tokens.txt");
         for(String key: listaTablasSimbolos.keySet()){
-                //System.out.println("------------------Tabla de simbolo : " + key);
+                System.out.println("------------------Tabla de simbolo : " + key);
                 writer.write("Tabla de simbolos: " + key + "\n");
                 writer.write("********Valores*********** \n");
                 //System.out.println("********Valores*********** ");
@@ -418,7 +418,7 @@ parser code
         return Character.isLetterOrDigit(L) || L==')' || L==']' || L=='\'' || L=='"';
     }
 
-    /**
+    /*
     * Busca el primer (o último) operador de un conjunto permitido al "nivel tope" (no dentro de paréntesis
     * ni dentro de literales de cadena/carácter).
     * @param s           expresión completa.
@@ -719,8 +719,8 @@ program ::= {:
             :}
                 lista_global main_funcion lista_global
             {:
+                System.out.println(">>> [DEBUG] Fin de análisis semántico.");
                 imprimirTablasSimbolos();
-
                 // Guardar codigo 3d a archivo
                 try {
                     java.nio.file.Files.write(
@@ -731,7 +731,7 @@ program ::= {:
                 } catch (Exception e) {
                     System.err.println("MAL" + e.getMessage());
                 }
-                System.out.println("fin de ejecución");
+                System.out.println("*******************++fin de ejecución");
 
             :}
             ;
@@ -846,7 +846,20 @@ asignacion_arreglo::=
                 varToken.setColumna(String.valueOf(lastColumn));
             }
         :}
-    | ID:nombreVar ASIGN COR_A arreglo_char:elementos COR_C
+    | ID:nombreVar ASIGN arreglo_char:elementos
+    {:
+        NodoToken varToken = buscarID(nombreVar.toString());
+        var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+        if(varToken != null){
+            varToken.setValor(elementos.toString());
+            varToken.setLinea(String.valueOf(lastLine));
+            varToken.setColumna(String.valueOf(lastColumn));
+        }else{
+            System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' no declarada. Línea %d, columna %d.\u001B[0m%n",
+                nombreVar.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        }
+    :}
     ;
 
 sentencia ::= declaracion FIN_E
