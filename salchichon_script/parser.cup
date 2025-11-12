@@ -795,7 +795,7 @@ lista_sentencias ::= sentencia
                   ;
 
 asignacion_arreglo::= 
-    ID:nombreVar ASIGN ID:nombreArreglo COR_A expresion:indice COR_C
+    ID:nombreVar ASIGN ID:nombreArreglo BLO_A expresion:indice BLO_C
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
             NodoToken arregloToken = buscarID(nombreArreglo.toString());
@@ -821,7 +821,7 @@ asignacion_arreglo::=
                 tieneErrores = true;
             }
         :}
-    | ID:nombreVar ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
+    | ID:nombreVar ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
             var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
@@ -1087,7 +1087,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                 ;
 
 
-declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo COR_A ENTERO COR_C ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
+declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A ENTERO BLO_C ASIGN BLO_A lista_elementos_arreglo_entero:elementos BLO_C
                                 {:
                                     // Declaración de arreglo de enteros CON asignación
                                     NodoToken declaracion = new NodoToken();
@@ -1119,7 +1119,7 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo COR_A ENTERO COR_C ASIG
                                 :}
                             ;
 
-declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar COR_A ENTERO COR_C ASIGN arreglo_char:valoresChar
+declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C ASIGN arreglo_char:valoresChar
                                 {:
                                     // Declaración de arreglo de chars CON asignación
                                     NodoToken declaracion = new NodoToken();
@@ -1151,7 +1151,7 @@ lista_char ::= CHAR:caracter
                 :}
             ;
 
-arreglo_char ::= COR_A lista_char:lista COR_C 
+arreglo_char ::= BLO_A lista_char:lista BLO_C 
                     {: 
                         String resultado = "[" + lista.toString() + "]";
                         RESULT = resultado;
@@ -1587,6 +1587,7 @@ factor ::= potencia:e1 POT potencia:e2
                 :}
         | potencia:p {: RESULT = p; :}
         ;
+}
 
 
 // POTENCIAS

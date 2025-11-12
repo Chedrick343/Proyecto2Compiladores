@@ -11,15 +11,14 @@ let bool _b1_$
 	output є letra э $
 	let int numS = numero - 1 * numero + numero $
 	output є numS э $
- 	let char arr[100]$
-	arr[0] = ['b','b','b','b']$
+	let char arreglo¿55?$
 	let float=-0.01$ |error sintactico
 	let char _x22_='a'$ ¡semantico x22!
 	let char _miChar_='!'  |error sintactico
 	let char _miChar2_='!!'$ |sintactico-semantico
 	let int _x30_=-1$
 	let bool _x40_=false$
-	let char _x50_[1000] = ¿4,5?$
+	let char _x50_¿1000? = ¿4,5?$
 	let string _x50_="Hola a todos los que est[a] haciendo un compilador nuevo¿n"$
 	decide of
 	є x22<=45 @ var>5.6 э ->  ¿  |semantico x22, var
@@ -57,6 +56,7 @@ init void principal є  э  ¿
 ¡
 Comentario 1
 !
+ 	let int arr¿67? = ¿1,2,3,4,5?$ |semantico
 	let char miChar='!'$
 	let char miChar2='!!'$ |sintactico
 	let string str1="Mi string 1"$
@@ -66,7 +66,7 @@ Comentario 1
 	let float fl2=3.7 ^ fl1+ є 45.6 % 76 э $ |semantico literal 76
 	
 |comentario 2
-	arr = 10 - arr[67] * func1  є hola, true, "hola mundo", 4.5, 'a' э $ |semantico func1, retorno func1
+	arr = 10 - arr¿67? $ |semantico func1, retorno func1
 	fl1 = 4.5%miChar^-0.005$ |semantico miChar
 	miFunc є miFunc є  э ,'a' э $ |semantico miFunc, hola
 	let bool bl0 = 6.7 != 8.9$ |ok
