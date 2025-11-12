@@ -969,6 +969,7 @@ funcion ::= declara_func PAR_A parametros_opt:params PAR_C bloque
                     System.out.println(">> [TS] Regresando a tabla global.");
                 :}
           | declara_func PAR_A parametros_opt PAR_C error
+          | declara_func PAR_A error PAR_C bloque
           ;
 
 declara_func::= tipo_funcion:tipoFun ID:nombreFun
