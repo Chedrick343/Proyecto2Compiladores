@@ -101,26 +101,26 @@ parser code
     * Efectos: Crea el scope global, lo establece como actual y agrega
     * dos entradas de tipo "funcion_sistema".
     */
-    public void inicarTS() {
-        listaTablasSimbolos.put(globalHash, new ArrayList<>());
-        currentHash = globalHash;
+public void inicarTS() {
+    listaTablasSimbolos.put(globalHash, new ArrayList<>());
+    currentHash = globalHash;
 
-        NodoToken printFunc = new NodoToken();
-        printFunc.setTipo("funcion_sistema");
-        printFunc.setId("imprimir");
-        printFunc.setValor("void");
-        printFunc.setLinea("0");
-        printFunc.setColumna("0");
-        listaTablasSimbolos.get(globalHash).add(printFunc);
+    NodoToken printFunc = new NodoToken();
+    printFunc.setTipo("funcion_sistema");
+    printFunc.setId("imprimir");
+    printFunc.setValor("void");
+    printFunc.setLinea("0");
+    printFunc.setColumna("0");
+    listaTablasSimbolos.get(globalHash).add(printFunc);
 
-        NodoToken readFunc = new NodoToken();
-        readFunc.setTipo("funcion_sistema");
-        readFunc.setId("leer");
-        readFunc.setValor("string");
-        readFunc.setLinea("0");
-        readFunc.setColumna("0");
-        listaTablasSimbolos.get(globalHash).add(readFunc);
-    }
+    NodoToken readFunc = new NodoToken();
+    readFunc.setTipo("funcion_sistema");
+    readFunc.setId("leer");
+    readFunc.setValor("string");
+    readFunc.setLinea("0");
+    readFunc.setColumna("0");
+    listaTablasSimbolos.get(globalHash).add(readFunc);
+}
 
     /**
     * Vuelca todas las tablas de símbolos a un archivo de texto (tokens.txt)
@@ -130,25 +130,25 @@ parser code
     */
     public void imprimirTablasSimbolos(){
         try{
-            FileWriter writer = new FileWriter("tokens.txt");
+        FileWriter writer = new FileWriter("tokens.txt");
         for(String key: listaTablasSimbolos.keySet()){
                 //System.out.println("------------------Tabla de simbolo : " + key);
-                writer.write("Tabla de simbolos: " + key + "\n");
-                writer.write("********Valores*********** \n");
+            writer.write("Tabla de simbolos: " + key + "\n");
+            writer.write("********Valores*********** \n");
                 //System.out.println("********Valores*********** ");
             for(NodoToken item : listaTablasSimbolos.get(key)){
                     //System.out.println(item.toString());
-                    writer.write(item.toString() + "\n");
-                }
-                //System.out.println("------------------Fin tabla de simbolos : " + key);
-                writer.write("------------------Fin tabla de simbolos : " + key + "\n\n");
+                writer.write(item.toString() + "\n");
             }
-            writer.close();
-        }catch(Exception e){
-            System.out.println("Error al escribir el archivo de tokens: " + e.getMessage());
+                //System.out.println("------------------Fin tabla de simbolos : " + key);
+            writer.write("------------------Fin tabla de simbolos : " + key + "\n\n");
         }
+        writer.close();
+        }catch(Exception e){
+        System.out.println("Error al escribir el archivo de tokens: " + e.getMessage());
     }
-    
+}
+
     /**
     * Busca el tipo asociado a un identificador dentro de una tabla específica.
     * @param tabla tabla de símbolos a inspeccionar.
@@ -671,7 +671,7 @@ action code
 :}
 
 // TERMINALES
-terminal PAR_A, PAR_C, BLO_A, BLO_C, COMA, FLECHA, FIN_E, ASIGN, COR_A, COR_C, COMILLA_SIMP, CADENA_CHAR;
+terminal PAR_A, PAR_C, BLO_A, BLO_C, COMA, FLECHA, FIN_E, ASIGN, COR_A, COR_C;
 terminal MAS, MENOS, POR, DIV, DIV_ENT, MOD, POT;
 terminal AND, OR, NOT;
 terminal INC, DEC;
@@ -691,12 +691,12 @@ non terminal String tipo, tipo_funcion;
 non terminal declaracion;
 non terminal bloque, lista_sentencias, lista_sentencias_opt, sentencia, expr_opc, llamada_funcion, parametros_llamada, imprimir, leer;
 non terminal funcion, parametros_opt, lista_parametros, parametro;
-non terminal asignacion, asignacion_dec;
+non terminal asignacion;
 non terminal expresion;
 non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, diferente_asignacion, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo; 
+non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo; 
 non terminal declara_func, declara_main_func;
 
 // PRECEDENCIA
@@ -734,7 +734,7 @@ program ::= {:
                 System.out.println("fin de ejecución");
 
             :}
-            ;
+        ;
             
 lista_global ::= elemento_global lista_global
     | /* vacío */
@@ -751,21 +751,22 @@ main_funcion ::= declara_main_func PAR_A PAR_C bloque
     ;
 
 declara_main_func ::= INIT VOID:tipo MAIN:main
-{:
-    NodoToken func = new NodoToken();
-    func.setId(main.toString());
-    func.setTipo(tipo.toString());
-    func.setLinea(String.valueOf(lastLine));
-    func.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(globalHash).add(func);
+                        {:
+                            NodoToken func = new NodoToken();
+                            func.setId(main.toString());
+                            func.setTipo(tipo.toString());
+                            func.setLinea(String.valueOf(lastLine));
+                            func.setColumna(String.valueOf(lastColumn));
+                            listaTablasSimbolos.get(globalHash).add(func);
 
-    currentHash = "TS_FUNC_" + main.toString();
-    listaTablasSimbolos.put(currentHash, new ArrayList<>());
-    System.out.println(">>> [DEBUG] Función main creada: " + currentHash);
+                            currentHash = "TS_FUNC_" + main.toString();
+                            listaTablasSimbolos.put(currentHash, new ArrayList<>());
+                            System.out.println(">>> [DEBUG] Función main creada: " + currentHash);
 
-    // CODIGO INTERMEDIO
-    cod3D("\n" + main + ":");
-:};
+                            // CODIGO INTERMEDIO
+                            cod3D("\n" + main + ":");
+                        :}
+                    ;
 
 // ======== DECLARACIÓN DE VARIABLES ========
 tipo ::= INT1 {: RESULT = "int"; :}
@@ -795,31 +796,31 @@ lista_sentencias ::= sentencia
 
 asignacion_arreglo::= 
     ID:nombreVar ASIGN ID:nombreArreglo COR_A expresion:indice COR_C
-    {:
-        NodoToken varToken = buscarID(nombreVar.toString());
-        NodoToken arregloToken = buscarID(nombreArreglo.toString());
-        var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
-        var tipoArreglo = arregloToken != null ? arregloToken.getTipo() : "desconocido";
-        if(varToken != null && arregloToken != null){    
-            if(tipoVar.matches("int") && tipoArreglo.matches("arreglo_entero")){
-                System.out.println(">>> [DEBUG] Asignación válida a arreglo entero: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
-                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
-            } 
-            else if(tipoVar.matches("char") && tipoArreglo.matches("arreglo_char")){
-                System.out.println(">>> [DEBUG] Asignación válida a arreglo Char: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
-                varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
-            }
-            else {
-                System.err.printf("\u001B[31mXXX Error semántico: Tipo incompatible en asignación a arreglo. Línea %d, columna %d.\u001B[0m%n",
-                    lastLine, lastColumn);
+        {:
+            NodoToken varToken = buscarID(nombreVar.toString());
+            NodoToken arregloToken = buscarID(nombreArreglo.toString());
+            var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
+            var tipoArreglo = arregloToken != null ? arregloToken.getTipo() : "desconocido";
+            if(varToken != null && arregloToken != null){    
+                if(tipoVar.matches("int") && tipoArreglo.matches("arreglo_entero")){
+                    System.out.println(">>> [DEBUG] Asignación válida a arreglo entero: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                    varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+                } 
+                else if(tipoVar.matches("char") && tipoArreglo.matches("arreglo_char")){
+                    System.out.println(">>> [DEBUG] Asignación válida a arreglo Char: " + nombreVar + " = " + nombreArreglo + "[" + indice + "]");
+                    varToken.setValor(nombreArreglo.toString() + "[" + indice.toString() + "]");
+                }
+                else {
+                    System.err.printf("\u001B[31mXXX Error semántico: Tipo incompatible en asignación a arreglo. Línea %d, columna %d.\u001B[0m%n",
+                        lastLine, lastColumn);
+                    tieneErrores = true;
+                }
+            }else{
+                System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' o arreglo %s no declarados. Línea %d, columna %d.\u001B[0m%n",
+                    nombreVar.toString(), nombreArreglo.toString(), lastLine, lastColumn);
                 tieneErrores = true;
             }
-        }else{
-            System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' o arreglo %s no declarados. Línea %d, columna %d.\u001B[0m%n",
-                nombreVar.toString(), nombreArreglo.toString(), lastLine, lastColumn);
-            tieneErrores = true;
-        }
-    :}
+        :}
     | ID:nombreVar ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
@@ -883,96 +884,98 @@ parametros_llamada ::= expresion
                         ;
 
 imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
-{:
-    String valorReal = "";
-    String tempValor = "";
+                {:
+                    String valorReal = "";
+                    String tempValor = "";
 
-    if (e != null) {
-        if (e instanceof java.util.HashMap) {
-            valorReal = ((HashMap)e).get("valor").toString();
-            tempValor = ((HashMap)e).get("temp").toString();
-        } else {
-            valorReal = e.toString();
-            tempValor = valorReal;
-        }
+                    if (e != null) {
+                        if (e instanceof java.util.HashMap) {
+                            valorReal = ((HashMap)e).get("valor").toString();
+                            tempValor = ((HashMap)e).get("temp").toString();
+                        } else {
+                            valorReal = e.toString();
+                            tempValor = valorReal;
+                        }
 
-        NodoToken posibleVar = buscarID(valorReal);
+                        NodoToken posibleVar = buscarID(valorReal);
 
-        cod3D("print " + tempValor);
+                        cod3D("print " + tempValor);
 
-        NodoToken imp = new NodoToken();
-        imp.setTipo("llamada_funcion_sistema");
-        imp.setId("imprimir");
-        imp.setValor(valorReal);
-        imp.setLinea(String.valueOf(lastLine));
-        imp.setColumna(String.valueOf(lastColumn));
-        listaTablasSimbolos.get(currentHash).add(imp);
+                        NodoToken imp = new NodoToken();
+                        imp.setTipo("llamada_funcion_sistema");
+                        imp.setId("imprimir");
+                        imp.setValor(valorReal);
+                        imp.setLinea(String.valueOf(lastLine));
+                        imp.setColumna(String.valueOf(lastColumn));
+                        listaTablasSimbolos.get(currentHash).add(imp);
 
-        System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + 
-                           " con valor: " + valorReal + 
-                           " (temp: " + tempValor + ")");
-    } else {
-        System.err.printf("\u001B[31mXXX Error semántico: llamada a imprimir() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
-            lastLine, lastColumn);
-        tieneErrores = true;
-    }
+                        System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + 
+                                        " con valor: " + valorReal + 
+                                        " (temp: " + tempValor + ")");
+                    } else {
+                        System.err.printf("\u001B[31mXXX Error semántico: llamada a imprimir() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
+                            lastLine, lastColumn);
+                        tieneErrores = true;
+                    }
 
-    RESULT = null; 
-:};
+                    RESULT = null; 
+                :}
+            ;
 
 
 leer ::= LEER PAR_A PAR_C
-{:
-    NodoToken leerNode = new NodoToken();
-    leerNode.setTipo("llamada_funcion_sistema");
-    leerNode.setId("leer");
-    leerNode.setValor("entrada_usuario");
-    leerNode.setLinea(String.valueOf(lastLine));
-    leerNode.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(leerNode);
-    System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash);
-:}
-| LEER PAR_A ID:var PAR_C
-{:
-    NodoToken leerNode = new NodoToken();
-    leerNode.setTipo("llamada_funcion_sistema");
-    leerNode.setId("leer");
-    leerNode.setValor("asigna_a:" + var.toString());
-    leerNode.setLinea(String.valueOf(lastLine));
-    leerNode.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(leerNode);
-    System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash + ", asignando a " + var);
-:};
+            {:
+                NodoToken leerNode = new NodoToken();
+                leerNode.setTipo("llamada_funcion_sistema");
+                leerNode.setId("leer");
+                leerNode.setValor("entrada_usuario");
+                leerNode.setLinea(String.valueOf(lastLine));
+                leerNode.setColumna(String.valueOf(lastColumn));
+                listaTablasSimbolos.get(currentHash).add(leerNode);
+                System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash);
+            :}
+        | LEER PAR_A ID:var PAR_C
+            {:
+                NodoToken leerNode = new NodoToken();
+                leerNode.setTipo("llamada_funcion_sistema");
+                leerNode.setId("leer");
+                leerNode.setValor("asigna_a:" + var.toString());
+                leerNode.setLinea(String.valueOf(lastLine));
+                leerNode.setColumna(String.valueOf(lastColumn));
+                listaTablasSimbolos.get(currentHash).add(leerNode);
+                System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash + ", asignando a " + var);
+            :}
+        ;
 
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
-funcion ::= declara_func PAR_A parametros_opt:params PAR_C
-             bloque
-             {:
-                currentHash = globalHash;
-                System.out.println(">> [TS] Regresando a tabla global.");
-            :}
+funcion ::= declara_func PAR_A parametros_opt:params PAR_C bloque
+                {:
+                    currentHash = globalHash;
+                    System.out.println(">> [TS] Regresando a tabla global.");
+                :}
           | declara_func PAR_A parametros_opt PAR_C error
           ;
 
 declara_func::= tipo_funcion:tipoFun ID:nombreFun
-{:
-    NodoToken func = new NodoToken();
-    func.setId(nombreFun.toString());
-    func.setTipo(tipoFun.toString());
-    func.setLinea(String.valueOf(lastLine));
-    func.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(globalHash).add(func);
+                {:
+                    NodoToken func = new NodoToken();
+                    func.setId(nombreFun.toString());
+                    func.setTipo(tipoFun.toString());
+                    func.setLinea(String.valueOf(lastLine));
+                    func.setColumna(String.valueOf(lastColumn));
+                    listaTablasSimbolos.get(globalHash).add(func);
 
-    currentHash = "TS_FUNC_" + nombreFun.toString();
-    listaTablasSimbolos.put(currentHash, new ArrayList<>());
-    System.out.println(">>> [DEBUG] Función creada: " + currentHash);
+                    currentHash = "TS_FUNC_" + nombreFun.toString();
+                    listaTablasSimbolos.put(currentHash, new ArrayList<>());
+                    System.out.println(">>> [DEBUG] Función creada: " + currentHash);
 
 
-    // CODIGO INTERMEDIO
-    cod3D("\n" + nombreFun + ":");
-:};
+                    // CODIGO INTERMEDIO
+                    cod3D("\n" + nombreFun + ":");
+                :}
+            ;
 
 parametros_opt ::= lista_parametros
                  | // VACIO
@@ -984,589 +987,592 @@ lista_parametros ::= parametro
 
 // TO-DO: AGREGAR PARAMETROS A codigo intermedio 
 parametro ::= tipo:ti ID:nombreParam
-    {:
+                {:
 
-        if (esIdExistente(currentHash, nombreParam.toString())) {
-            System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
-                nombreParam.toString(), lastLine, lastColumn);
-            tieneErrores = true;
-        } else {
-            NodoToken param = new NodoToken();
-            param.setTipo(ti);
-            param.setId(nombreParam.toString());
-            param.setLinea(String.valueOf(lastLine));
-            param.setColumna(String.valueOf(lastColumn));
-            listaTablasSimbolos.get(currentHash).add(param);
-            System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
-        }
-    :};
+                    if (esIdExistente(currentHash, nombreParam.toString())) {
+                        System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
+                            nombreParam.toString(), lastLine, lastColumn);
+                        tieneErrores = true;
+                    } else {
+                        NodoToken param = new NodoToken();
+                        param.setTipo(ti);
+                        param.setId(nombreParam.toString());
+                        param.setLinea(String.valueOf(lastLine));
+                        param.setColumna(String.valueOf(lastColumn));
+                        listaTablasSimbolos.get(currentHash).add(param);
+                        System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+                    }
+                :}
+            ;
 
 
 //+++++++++++++++++++++DECLARACIONES Y ASIGNACIONES+++++++++++++++
 
 // VERSIÓN SIMPLIFICADA - DECLARACIONES SEPARADAS
 declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion 
-{:
+                    {:
 
-    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
-        System.err.printf(" \u001B[31mXXX Error semántico: Variable '%s' ya declarada en scope actual. Línea %d, columna %d.\u001B[0m%n",
-            nombreDeclaracion.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    } else {
-        // Declaración SIN asignación
-        NodoToken declaracion = new NodoToken();
-        declaracion.setTipo(tipoDato);
-        declaracion.setId(nombreDeclaracion.toString());
-        declaracion.setValor(null); // Valor vacío por defecto
-        declaracion.setLinea(String.valueOf(lastLine));
-        declaracion.setColumna(String.valueOf(lastColumn));
-        listaTablasSimbolos.get(currentHash).add(declaracion);
-        System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
-    }
-:} 
-| LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
-{:
-    if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
-        System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' ya declarada en ámbito actual. Línea %d, columna %d.\u001B[0m%n",
-            nombreDeclaracion.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    } else {
-        // Declaración CON asignación
-        NodoToken declaracion = new NodoToken();
-        declaracion.setTipo(tipoDato);
-        declaracion.setId(nombreDeclaracion.toString());
+                        if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+                            System.err.printf(" \u001B[31mXXX Error semántico: Variable '%s' ya declarada en scope actual. Línea %d, columna %d.\u001B[0m%n",
+                                nombreDeclaracion.toString(), lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            // Declaración SIN asignación
+                            NodoToken declaracion = new NodoToken();
+                            declaracion.setTipo(tipoDato);
+                            declaracion.setId(nombreDeclaracion.toString());
+                            declaracion.setValor(null); // Valor vacío por defecto
+                            declaracion.setLinea(String.valueOf(lastLine));
+                            declaracion.setColumna(String.valueOf(lastColumn));
+                            listaTablasSimbolos.get(currentHash).add(declaracion);
+                            System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+                        }
+                    :} 
+                | LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
+                    {:
+                        if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
+                            System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' ya declarada en ámbito actual. Línea %d, columna %d.\u001B[0m%n",
+                                nombreDeclaracion.toString(), lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            // Declaración CON asignación
+                            NodoToken declaracion = new NodoToken();
+                            declaracion.setTipo(tipoDato);
+                            declaracion.setId(nombreDeclaracion.toString());
 
-        if (valorExpr != null) {
-            String valorReal = "";
-            String tempValor = "";
-            if (valorExpr instanceof java.util.HashMap) {
-                valorReal = ((HashMap)valorExpr).get("valor").toString();
-                tempValor = ((HashMap)valorExpr).get("temp").toString();
-            } else {
-                valorReal = valorExpr.toString();
-                tempValor = valorReal;
-            }
+                            if (valorExpr != null) {
+                                String valorReal = "";
+                                String tempValor = "";
+                                if (valorExpr instanceof java.util.HashMap) {
+                                    valorReal = ((HashMap)valorExpr).get("valor").toString();
+                                    tempValor = ((HashMap)valorExpr).get("temp").toString();
+                                } else {
+                                    valorReal = valorExpr.toString();
+                                    tempValor = valorReal;
+                                }
 
-            //validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                //validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
 
-            declaracion.setValor(valorReal);
+                                declaracion.setValor(valorReal);
 
-            cod3D(nombreDeclaracion + " = " + tempValor);
+                                cod3D(nombreDeclaracion + " = " + tempValor);
 
-            System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
-                + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
-        } else {
-            declaracion.setValor(null);
-            System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
-                + nombreDeclaracion.toString() + " en " + currentHash);
-        }
+                                System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
+                                    + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
+                            } else {
+                                declaracion.setValor(null);
+                                System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
+                                    + nombreDeclaracion.toString() + " en " + currentHash);
+                            }
 
-        declaracion.setLinea(String.valueOf(lastLine));
-        declaracion.setColumna(String.valueOf(lastColumn));
-        listaTablasSimbolos.get(currentHash).add(declaracion);
-    }
-:}
-;
+                            declaracion.setLinea(String.valueOf(lastLine));
+                            declaracion.setColumna(String.valueOf(lastColumn));
+                            listaTablasSimbolos.get(currentHash).add(declaracion);
+                        }
+                    :}
+                ;
 
 
 declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo COR_A ENTERO COR_C ASIGN COR_A lista_elementos_arreglo_entero:elementos COR_C
-{:
-    // Declaración de arreglo de enteros CON asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo("arreglo_entero");
-    declaracion.setId(nombreArreglo.toString());
-    
-    StringBuilder elementosStr = new StringBuilder();
-    elementosStr.append("[");
-    
-    if (elementos != null && elementos instanceof ArrayList) {
-        ArrayList<String> elementosLista = (ArrayList<String>) elementos;
-        for (int i = 0; i < elementosLista.size(); i++) {
-            if (i > 0) elementosStr.append(", ");
-            elementosStr.append(elementosLista.get(i));
-        }
-        System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
-    } else {
-        elementosStr.append("]");
-        System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
-    }
-    
-    elementosStr.append("]");
-    
-    declaracion.setValor(elementosStr.toString());
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
-    System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
-:}
-;
+                                {:
+                                    // Declaración de arreglo de enteros CON asignación
+                                    NodoToken declaracion = new NodoToken();
+                                    declaracion.setTipo("arreglo_entero");
+                                    declaracion.setId(nombreArreglo.toString());
+                                    
+                                    StringBuilder elementosStr = new StringBuilder();
+                                    elementosStr.append("[");
+                                    
+                                    if (elementos != null && elementos instanceof ArrayList) {
+                                        ArrayList<String> elementosLista = (ArrayList<String>) elementos;
+                                        for (int i = 0; i < elementosLista.size(); i++) {
+                                            if (i > 0) elementosStr.append(", ");
+                                            elementosStr.append(elementosLista.get(i));
+                                        }
+                                        System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
+                                    } else {
+                                        elementosStr.append("]");
+                                        System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
+                                    }
+                                    
+                                    elementosStr.append("]");
+                                    
+                                    declaracion.setValor(elementosStr.toString());
+                                    declaracion.setLinea(String.valueOf(lastLine));
+                                    declaracion.setColumna(String.valueOf(lastColumn));
+                                    listaTablasSimbolos.get(currentHash).add(declaracion);
+                                    System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
+                                :}
+                            ;
 
 declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar COR_A ENTERO COR_C ASIGN arreglo_char:valoresChar
-{:
-    // Declaración de arreglo de chars CON asignación
-    NodoToken declaracion = new NodoToken();
-    declaracion.setTipo("arreglo_char");
-    declaracion.setId(nombreArregloChar.toString());
-    
-    if (valoresChar != null) {
-        String valorStr = valoresChar.toString();
-        declaracion.setValor(valorStr);
-        System.out.println(">>> [DEBUG] Arreglo de chars declarado CON valor: " + nombreArregloChar.toString() + " = " + valorStr + " en " + currentHash);
-    } else {
-        declaracion.setValor("arreglo_char");
-        System.out.println(">>> [DEBUG] Arreglo de chars declarado SIN valor específico: " + nombreArregloChar.toString() + " en " + currentHash);
-    }
-    declaracion.setLinea(String.valueOf(lastLine));
-    declaracion.setColumna(String.valueOf(lastColumn));
-    listaTablasSimbolos.get(currentHash).add(declaracion);
-:}
-;
+                                {:
+                                    // Declaración de arreglo de chars CON asignación
+                                    NodoToken declaracion = new NodoToken();
+                                    declaracion.setTipo("arreglo_char");
+                                    declaracion.setId(nombreArregloChar.toString());
+                                    
+                                    if (valoresChar != null) {
+                                        String valorStr = valoresChar.toString();
+                                        declaracion.setValor(valorStr);
+                                        System.out.println(">>> [DEBUG] Arreglo de chars declarado CON valor: " + nombreArregloChar.toString() + " = " + valorStr + " en " + currentHash);
+                                    } else {
+                                        declaracion.setValor("arreglo_char");
+                                        System.out.println(">>> [DEBUG] Arreglo de chars declarado SIN valor específico: " + nombreArregloChar.toString() + " en " + currentHash);
+                                    }
+                                    declaracion.setLinea(String.valueOf(lastLine));
+                                    declaracion.setColumna(String.valueOf(lastColumn));
+                                    listaTablasSimbolos.get(currentHash).add(declaracion);
+                                :}
+                            ;
 
-lista_char ::= CHAR:caracter {: 
-    RESULT = caracter.toString();
-:}
-| lista_char:lista COMA CHAR:caracter {: 
+lista_char ::= CHAR:caracter 
+                {: 
+                    RESULT = caracter.toString();
+                :}
+            | lista_char:lista COMA CHAR:caracter 
+                {: 
+                    String listaStr = lista.toString() + ", " + caracter.toString();
+                    RESULT = listaStr;
+                :}
+            ;
 
-    String listaStr = lista.toString() + ", " + caracter.toString();
-    RESULT = listaStr;
-:}
-;
-
-arreglo_char ::= COR_A lista_char:lista COR_C {: 
-    String resultado = "[" + lista.toString() + "]";
-    RESULT = resultado;
-:};
+arreglo_char ::= COR_A lista_char:lista COR_C 
+                    {: 
+                        String resultado = "[" + lista.toString() + "]";
+                        RESULT = resultado;
+                    :}
+                ;
 
 asignacion ::= ID:nombre ASIGN expresion:valor
-{:
-    NodoToken variable = buscarID(nombre.toString());
-    if (variable != null) {
-        if (valor != null) {
-            String valorReal = "";
-            String tempValor = "";
-            if (valor instanceof java.util.HashMap) {
-                valorReal = ((HashMap)valor).get("valor").toString();
-                tempValor = ((HashMap)valor).get("temp").toString();
-            } else {
-                valorReal = valor.toString();
-                tempValor = valorReal;
-            }
+                    {:
+                        NodoToken variable = buscarID(nombre.toString());
+                        if (variable != null) {
+                            if (valor != null) {
+                                String valorReal = "";
+                                String tempValor = "";
+                                if (valor instanceof java.util.HashMap) {
+                                    valorReal = ((HashMap)valor).get("valor").toString();
+                                    tempValor = ((HashMap)valor).get("temp").toString();
+                                } else {
+                                    valorReal = valor.toString();
+                                    tempValor = valorReal;
+                                }
 
-            validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
-            cod3D(nombre + " = " + tempValor);
-            variable.setValor(valorReal);
+                                validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+                                cod3D(nombre + " = " + tempValor);
+                                variable.setValor(valorReal);
 
-            System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
-        } else {
-            variable.setValor(null);
-        }
-    } else {
-        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
-            nombre.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    }
-    RESULT = nombre;
-:}
-| ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
-{:
-    NodoToken variable = buscarID(nombre.toString());
-    if (variable != null) {
-        variable.setValor("arreglo_entero[" + valorArr + "]");
-        cod3D(nombre + "[" + valorArr + "] = " + valorArr);
-    } else {
-        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
-            nombre.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    }
-        RESULT = nombre;
-:}
-| ID:nombre COR_A ENTERO COR_C ASIGN CHAR:valorChar
-{:
-    NodoToken variable = buscarID(nombre.toString());
-    if (variable != null) {
-        variable.setValor("arreglo_char");
-        cod3D(nombre + "[" + valorChar + "] = arreglo_char");
-    } else {
-        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
-            nombre.toString(), lastLine, lastColumn);
-        tieneErrores = true;
-    }
-    RESULT = nombre;
-:}
-;
+                                System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
+                            } else {
+                                variable.setValor(null);
+                            }
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+                                nombre.toString(), lastLine, lastColumn);
+                            tieneErrores = true;
+                        }
+                        RESULT = nombre;
+                    :}
+            | ID:nombre COR_A ENTERO COR_C ASIGN ENTERO:valorArr
+                {:
+                    NodoToken variable = buscarID(nombre.toString());
+                    if (variable != null) {
+                        variable.setValor("arreglo_entero[" + valorArr + "]");
+                        cod3D(nombre + "[" + valorArr + "] = " + valorArr);
+                    } else {
+                        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+                            nombre.toString(), lastLine, lastColumn);
+                        tieneErrores = true;
+                    }
+                        RESULT = nombre;
+                :}
+            | ID:nombre COR_A ENTERO COR_C ASIGN CHAR:valorChar
+                {:
+                    NodoToken variable = buscarID(nombre.toString());
+                    if (variable != null) {
+                        variable.setValor("arreglo_char");
+                        cod3D(nombre + "[" + valorChar + "] = arreglo_char");
+                    } else {
+                        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no ha sido declarada. Línea %d, columna %d.\u001B[0m%n",
+                            nombre.toString(), lastLine, lastColumn);
+                        tieneErrores = true;
+                    }
+                    RESULT = nombre;
+                :}
+            ;
 
 
 // EXPRESIONES
 expresion ::= expresion:e1 AND expresion:e2
-    {:
-        HashMap<String, String> res = new HashMap<>();
-        
-        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
-            String temp1 = ((HashMap)e1).get("temp").toString();
-            String temp2 = ((HashMap)e2).get("temp").toString();
-            String temp = genOperacion3D(temp1, "&&", temp2);
-            res.put("temp", temp);
-            res.put("valor", "true");
-        } else {
-            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión AND. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp", "error");
-            res.put("valor", "error");
-        }
-        
-        RESULT = res;
-    :}
-| expresion:e1 OR expresion:e2
-    {:
-        HashMap<String, String> res = new HashMap<>();
-        
-        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
-            String temp1 = ((HashMap)e1).get("temp").toString();
-            String temp2 = ((HashMap)e2).get("temp").toString();
-            String temp = genOperacion3D(temp1, "||", temp2);
-            res.put("temp", temp);
-            res.put("valor", "true");
-        } else {
-            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión OR. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp", "error");
-            res.put("valor", "error");
-        }
-        
-        RESULT = res;
-    :}
-| NOT expresion:e
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String opTemp = "";
-        String opValor = "";
+                    {:
+                        HashMap<String, String> res = new HashMap<>();
+                        
+                        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+                            String temp1 = ((HashMap)e1).get("temp").toString();
+                            String temp2 = ((HashMap)e2).get("temp").toString();
+                            String temp = genOperacion3D(temp1, "&&", temp2);
+                            res.put("temp", temp);
+                            res.put("valor", "true");
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión AND. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+                            tieneErrores = true;
+                            res.put("temp", "error");
+                            res.put("valor", "error");
+                        }
+                        
+                        RESULT = res;
+                    :}
+            | expresion:e1 OR expresion:e2
+                    {:
+                        HashMap<String, String> res = new HashMap<>();
+                        
+                        if (e1 != null && e2 != null && !((HashMap)e2).isEmpty()) {
+                            String temp1 = ((HashMap)e1).get("temp").toString();
+                            String temp2 = ((HashMap)e2).get("temp").toString();
+                            String temp = genOperacion3D(temp1, "||", temp2);
+                            res.put("temp", temp);
+                            res.put("valor", "true");
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : Operandos nulos o vacíos en la expresión OR. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+                            tieneErrores = true;
+                            res.put("temp", "error");
+                            res.put("valor", "error");
+                        }
+                        
+                        RESULT = res;
+                    :}
+            | NOT expresion:e
+                    {:
+                        HashMap<String,String> res = new HashMap<>();
+                        String opTemp = "";
+                        String opValor = "";
 
-        if (e == null) {
-            System.err.println(">>> [ERROR] Expresión nula en operador NOT (línea " + lastLine + ")");
-            opTemp = "error";
-            opValor = "error";
-        } else if (e instanceof java.util.HashMap) {
-            HashMap tmp = (HashMap)e;
-            opTemp = tmp.get("temp") != null ? tmp.get("temp").toString() : "error";
-            opValor = tmp.get("valor") != null ? tmp.get("valor").toString() : "true";
-        } else {
-            opTemp = e.toString();
-            opValor = e.toString();
-        }
+                        if (e == null) {
+                            System.err.println(">>> [ERROR] Expresión nula en operador NOT (línea " + lastLine + ")");
+                            opTemp = "error";
+                            opValor = "error";
+                        } else if (e instanceof java.util.HashMap) {
+                            HashMap tmp = (HashMap)e;
+                            opTemp = tmp.get("temp") != null ? tmp.get("temp").toString() : "error";
+                            opValor = tmp.get("valor") != null ? tmp.get("valor").toString() : "true";
+                        } else {
+                            opTemp = e.toString();
+                            opValor = e.toString();
+                        }
 
-        String temp = nuevaTempInt();
-        cod3D(temp + " = !" + opTemp);
-        res.put("temp", temp);
-        res.put("valor", "!" + opValor);
-        RESULT = res;
-    :}
+                        String temp = nuevaTempInt();
+                        cod3D(temp + " = !" + opTemp);
+                        res.put("temp", temp);
+                        res.put("valor", "!" + opValor);
+                        RESULT = res;
+                    :}
 
-| expresion_arit:e1 op_rel:op expresion_arit:e2
-    {:
-        HashMap<String, String> res = new HashMap<>();
-        System.out.println(">>> [DEBUG] Evaluando expresión relacional con operadores: " + op.toString());
-        if (e1 != null && e2 != null) {
-            String val1 = ((HashMap)e1).get("valor").toString();
-            String val2 = ((HashMap)e2).get("valor").toString();
-            String tipo1 = obtenerTipoExpresion(val1);
-            String tipo2 = obtenerTipoExpresion(val2);
-            
+            | expresion_arit:e1 op_rel:op expresion_arit:e2
+                    {:
+                        HashMap<String, String> res = new HashMap<>();
+                        System.out.println(">>> [DEBUG] Evaluando expresión relacional con operadores: " + op.toString());
+                        if (e1 != null && e2 != null) {
+                            String val1 = ((HashMap)e1).get("valor").toString();
+                            String val2 = ((HashMap)e2).get("valor").toString();
+                            String tipo1 = obtenerTipoExpresion(val1);
+                            String tipo2 = obtenerTipoExpresion(val2);
+                            
 
-            if (sonTiposCompatibles(tipo1, tipo2)) { 
-                String t1 = ((HashMap)e1).get("temp").toString();
-                String t2 = ((HashMap)e2).get("temp").toString();
-                String temp = genOperacion3D(t1, op.toString(), t2);
-                res.put("temp", temp);
-                res.put("valor", "true");
-                RESULT = res;
-            } else {
-                System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
-                    tipo1, tipo2, lastLine, lastColumn);
-                tieneErrores = true;
-                RESULT = null;
-            }
-        } else {
-            System.err.printf("\u001B[31mXXX Error semántico XXX : Expresiones nulas en operación relacional. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
-            tieneErrores = true;
-            RESULT = null;
-        }
-    :}
-
-| expresion_arit:e {: RESULT = e; :}
-;
+                            if (sonTiposCompatibles(tipo1, tipo2)) { 
+                                String t1 = ((HashMap)e1).get("temp").toString();
+                                String t2 = ((HashMap)e2).get("temp").toString();
+                                String temp = genOperacion3D(t1, op.toString(), t2);
+                                res.put("temp", temp);
+                                res.put("valor", "true");
+                                RESULT = res;
+                            } else {
+                                System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en expresión relacional. Línea %d, columna %d.\u001B[0m%n",
+                                    tipo1, tipo2, lastLine, lastColumn);
+                                tieneErrores = true;
+                                RESULT = null;
+                            }
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : Expresiones nulas en operación relacional. Línea %d, columna %d.\u001B[0m%n", lastLine, lastColumn);
+                            tieneErrores = true;
+                            RESULT = null;
+                        }
+                    :}
+            | expresion_arit:e {: RESULT = e; :}
+            ;
 
 // EXPRESIONES ARITMETICAS
 expresion_arit ::= expresion_arit:e1 MAS termino:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                    {:
+                        HashMap<String,String> res = new HashMap<>();
+                        String v1 = ((HashMap)e1).get("valor").toString();
+                        String v2 = ((HashMap)e2).get("valor").toString();
+                        String t1 = ((HashMap)e1).get("temp").toString();
+                        String t2 = ((HashMap)e2).get("temp").toString();
 
-        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
+                        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
 
-            System.out.println(v1 + " + " + v2);            
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                            System.out.println(v1 + " + " + v2);            
+                            NodoToken var1 = buscarID(v1);
+                            NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
+                            if (var1 != null && var1.getValor() == null) {
+                                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                                tieneErrores = true;
+                            } else if (var2 != null && var2.getValor() == null) {
+                                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                                tieneErrores = true;
+                            } else {
 
-                String temp = genOperacion3D(t1, "+", t2);
-                res.put("temp", temp);
-                res.put("valor", v1+"+"+v2);
-            }
-        } else {
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en suma. Línea %d, columna %d.\u001B[0m%n",
-                obtenerTipoExpresion(v1), obtenerTipoExpresion(v2), lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-        }
+                                String temp = genOperacion3D(t1, "+", t2);
+                                res.put("temp", temp);
+                                res.put("valor", v1+"+"+v2);
+                            }
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en suma. Línea %d, columna %d.\u001B[0m%n",
+                                obtenerTipoExpresion(v1), obtenerTipoExpresion(v2), lastLine, lastColumn);
+                            tieneErrores = true;
+                            res.put("temp","error");
+                            res.put("valor","error");
+                        }
 
-        RESULT = res;
-    :}
-| expresion_arit:e1 MENOS termino:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                        RESULT = res;
+                    :}
+                | expresion_arit:e1 MENOS termino:e2
+                    {:
+                        HashMap<String,String> res = new HashMap<>();
+                        String v1 = ((HashMap)e1).get("valor").toString();
+                        String v2 = ((HashMap)e2).get("valor").toString();
+                        String t1 = ((HashMap)e1).get("temp").toString();
+                        String t2 = ((HashMap)e2).get("temp").toString();
 
-        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
+                        if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
 
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                            NodoToken var1 = buscarID(v1);
+                            NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
+                            if (var1 != null && var1.getValor() == null) {
+                                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                                tieneErrores = true;
+                            } else if (var2 != null && var2.getValor() == null) {
+                                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                                tieneErrores = true;
+                            } else {
 
-                String temp = genOperacion3D(t1, "-", t2);
-                res.put("temp", temp);
-                res.put("valor", v1+"-"+v2);
-            }
-        } else {
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en resta. Línea %d, columna %d.\u001B[0m%n",
-                obtenerTipoExpresion(v1), obtenerTipoExpresion(v2), lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-        }
-        RESULT = res;
-    :}
-| termino:t {: RESULT = t; :}
-;
+                                String temp = genOperacion3D(t1, "-", t2);
+                                res.put("temp", temp);
+                                res.put("valor", v1+"-"+v2);
+                            }
+                        } else {
+                            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en resta. Línea %d, columna %d.\u001B[0m%n",
+                                obtenerTipoExpresion(v1), obtenerTipoExpresion(v2), lastLine, lastColumn);
+                            tieneErrores = true;
+                            res.put("temp","error");
+                            res.put("valor","error");
+                        }
+                        RESULT = res;
+                    :}
+                | termino:t {: RESULT = t; :}
+                ;
 
 // TERMINOS
 termino ::= termino:e1 POR factor:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                {:
+                    HashMap<String,String> res = new HashMap<>();
+                    String v1 = ((HashMap)e1).get("valor").toString();
+                    String v2 = ((HashMap)e2).get("valor").toString();
+                    String t1 = ((HashMap)e1).get("temp").toString();
+                    String t2 = ((HashMap)e2).get("temp").toString();
 
-        String tt1 = obtenerTipoExpresion(v1);
-        String tt2 = obtenerTipoExpresion(v2);
+                    String tt1 = obtenerTipoExpresion(v1);
+                    String tt2 = obtenerTipoExpresion(v2);
 
-        if (!sonTiposCompatibles(tt1, tt2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en multiplicación. Línea %d, columna %d.\u001B[0m%n",
-                tt1, tt2, lastLine, lastColumn);
-        } else {
+                    if (!sonTiposCompatibles(tt1, tt2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en multiplicación. Línea %d, columna %d.\u001B[0m%n",
+                            tt1, tt2, lastLine, lastColumn);
+                    } else {
 
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                        NodoToken var1 = buscarID(v1);
+                        NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
-                String temp = genOperacion3D(t1, "*", t2);
-                res.put("temp", temp);
-                res.put("valor", v1 + "*" + v2);
-            }
-        }
-        RESULT = res;
-    :}
-| termino:e1 DIV factor:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                        if (var1 != null && var1.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else if (var2 != null && var2.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            String temp = genOperacion3D(t1, "*", t2);
+                            res.put("temp", temp);
+                            res.put("valor", v1 + "*" + v2);
+                        }
+                    }
+                    RESULT = res;
+                :}
+        | termino:e1 DIV factor:e2
+                {:
+                    HashMap<String,String> res = new HashMap<>();
+                    String v1 = ((HashMap)e1).get("valor").toString();
+                    String v2 = ((HashMap)e2).get("valor").toString();
+                    String t1 = ((HashMap)e1).get("temp").toString();
+                    String t2 = ((HashMap)e2).get("temp").toString();
 
-        String tt1 = obtenerTipoExpresion(v1);
-        String tt2 = obtenerTipoExpresion(v2);
+                    String tt1 = obtenerTipoExpresion(v1);
+                    String tt2 = obtenerTipoExpresion(v2);
 
-        if (!sonTiposCompatibles(tt1, tt2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en división. Línea %d, columna %d.\u001B[0m%n",
-                tt1, tt2, lastLine, lastColumn);
-        }
-        else if (esCeroLiteral(v2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: División por cero (literal 0/0.0). Línea %d, columna %d.\u001B[0m%n",
-                lastLine, lastColumn);
-        } else {
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                    if (!sonTiposCompatibles(tt1, tt2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: Tipos incompatibles '%s' y '%s' en división. Línea %d, columna %d.\u001B[0m%n",
+                            tt1, tt2, lastLine, lastColumn);
+                    }
+                    else if (esCeroLiteral(v2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: División por cero (literal 0/0.0). Línea %d, columna %d.\u001B[0m%n",
+                            lastLine, lastColumn);
+                    } else {
+                        NodoToken var1 = buscarID(v1);
+                        NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
-                String temp = genOperacion3D(t1, "/", t2);
-                res.put("temp", temp);
-                res.put("valor", v1 + "/" + v2);
-            }
-        }
-        RESULT = res;
-    :}
-| termino:e1 DIV_ENT factor:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                        if (var1 != null && var1.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else if (var2 != null && var2.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            String temp = genOperacion3D(t1, "/", t2);
+                            res.put("temp", temp);
+                            res.put("valor", v1 + "/" + v2);
+                        }
+                    }
+                    RESULT = res;
+                :}
+        | termino:e1 DIV_ENT factor:e2
+                {:
+                    HashMap<String,String> res = new HashMap<>();
+                    String v1 = ((HashMap)e1).get("valor").toString();
+                    String v2 = ((HashMap)e2).get("valor").toString();
+                    String t1 = ((HashMap)e1).get("temp").toString();
+                    String t2 = ((HashMap)e2).get("temp").toString();
 
-        String tt1 = obtenerTipoExpresion(v1);
-        String tt2 = obtenerTipoExpresion(v2);
+                    String tt1 = obtenerTipoExpresion(v1);
+                    String tt2 = obtenerTipoExpresion(v2);
 
-        if (!sonAmbosEnteros(tt1, tt2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: DIV_ENT requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
-                tt1, tt2, lastLine, lastColumn);
-        }
-        else if (esCeroLiteral(v2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: División entera por cero. Línea %d, columna %d.\u001B[0m%n",
-                lastLine, lastColumn);
-        } else {
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                    if (!sonAmbosEnteros(tt1, tt2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: DIV_ENT requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                            tt1, tt2, lastLine, lastColumn);
+                    }
+                    else if (esCeroLiteral(v2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: División entera por cero. Línea %d, columna %d.\u001B[0m%n",
+                            lastLine, lastColumn);
+                    } else {
+                        NodoToken var1 = buscarID(v1);
+                        NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
-                String temp = genOperacion3D(t1, "//", t2); 
-                res.put("temp", temp);
-                res.put("valor", v1 + "//" + v2);
-            }
-        }
-        RESULT = res;
-    :}
-| termino:e1 MOD factor:e2
-    {:
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
-        String t1 = ((HashMap)e1).get("temp").toString();
-        String t2 = ((HashMap)e2).get("temp").toString();
+                        if (var1 != null && var1.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else if (var2 != null && var2.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            String temp = genOperacion3D(t1, "//", t2); 
+                            res.put("temp", temp);
+                            res.put("valor", v1 + "//" + v2);
+                        }
+                    }
+                    RESULT = res;
+                :}
+        | termino:e1 MOD factor:e2
+                {:
+                    HashMap<String,String> res = new HashMap<>();
+                    String v1 = ((HashMap)e1).get("valor").toString();
+                    String v2 = ((HashMap)e2).get("valor").toString();
+                    String t1 = ((HashMap)e1).get("temp").toString();
+                    String t2 = ((HashMap)e2).get("temp").toString();
 
-        String tt1 = obtenerTipoExpresion(v1);
-        String tt2 = obtenerTipoExpresion(v2);
+                    String tt1 = obtenerTipoExpresion(v1);
+                    String tt2 = obtenerTipoExpresion(v2);
 
-        if (!sonAmbosEnteros(tt1, tt2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: MOD requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
-                tt1, tt2, lastLine, lastColumn);
-        }
-        else if (esCeroLiteral(v2)) {
-            tieneErrores = true;
-            res.put("temp","error");
-            res.put("valor","error");
-            System.err.printf("\u001B[31mXXX Error semántico: Módulo por cero. Línea %d, columna %d.\u001B[0m%n",
-                lastLine, lastColumn);
-        } else {
-            NodoToken var1 = buscarID(v1);
-            NodoToken var2 = buscarID(v2);
+                    if (!sonAmbosEnteros(tt1, tt2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: MOD requiere enteros (recibido '%s' y '%s'). Línea %d, columna %d.\u001B[0m%n",
+                            tt1, tt2, lastLine, lastColumn);
+                    }
+                    else if (esCeroLiteral(v2)) {
+                        tieneErrores = true;
+                        res.put("temp","error");
+                        res.put("valor","error");
+                        System.err.printf("\u001B[31mXXX Error semántico: Módulo por cero. Línea %d, columna %d.\u001B[0m%n",
+                            lastLine, lastColumn);
+                    } else {
+                        NodoToken var1 = buscarID(v1);
+                        NodoToken var2 = buscarID(v2);
 
-            if (var1 != null && var1.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
-                tieneErrores = true;
-            } else if (var2 != null && var2.getValor() == null) {
-                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
-                tieneErrores = true;
-            } else {
-                String temp = genOperacion3D(t1, "%", t2);
-                res.put("temp", temp);
-                res.put("valor", v1 + "%" + v2);
-            }
-        }
-        RESULT = res;
-    :}
-| factor:f {: RESULT = f; :}
-;
+                        if (var1 != null && var1.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v1, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else if (var2 != null && var2.getValor() == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no tiene valor asignado. Línea %d, columna %d.\u001B[0m%n", v2, lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            String temp = genOperacion3D(t1, "%", t2);
+                            res.put("temp", temp);
+                            res.put("valor", v1 + "%" + v2);
+                        }
+                    }
+                    RESULT = res;
+                :}
+        | factor:f {: RESULT = f; :}
+        ;
 
 
 // FACTORES
 factor ::= potencia:e1 POT potencia:e2
-    {:
-        // Verificar que ambos factores sean números
-        HashMap<String,String> res = new HashMap<>();
-        String v1 = ((HashMap)e1).get("valor").toString();
-        String v2 = ((HashMap)e2).get("valor").toString();
+                {:
+                    // Verificar que ambos factores sean números
+                    HashMap<String,String> res = new HashMap<>();
+                    String v1 = ((HashMap)e1).get("valor").toString();
+                    String v2 = ((HashMap)e2).get("valor").toString();
 
-        if (!(v1.matches("^-?\\d+$") || v1.matches("^-?\\d*\\.\\d+$"))) {
-            System.err.printf("\u001B[31mXXX Error semántico: Operando izquierdo '%s' no es numérico en operación de potencia. Línea %d, columna %d.\u001B[0m%n",
-                v1, lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp", "error");
-            res.put("valor", "error");
-        } else if (!(v2.matches("^-?\\d+$") || v2.matches("^-?\\d*\\.\\d+$"))) {
-            System.err.printf("\u001B[31mXXX Error semántico: Operando derecho '%s' no es numérico en operación de potencia. Línea %d, columna %d.\u001B[0m%n",
-                v2, lastLine, lastColumn);
-            tieneErrores = true;
-            res.put("temp", "error");
-            res.put("valor", "error");
-        } else {
-            String t1 = ((HashMap)e1).get("temp").toString();
-            String t2 = ((HashMap)e2).get("temp").toString();
-            String temp = genOperacion3D(t1, "^", t2);
-            res.put("temp", temp);
-            res.put("valor", v1 + "^" + v2); 
-        }
-        RESULT = res;
-    :}
-| potencia:p {: RESULT = p; :}
-;
+                    if (!(v1.matches("^-?\\d+$") || v1.matches("^-?\\d*\\.\\d+$"))) {
+                        System.err.printf("\u001B[31mXXX Error semántico: Operando izquierdo '%s' no es numérico en operación de potencia. Línea %d, columna %d.\u001B[0m%n",
+                            v1, lastLine, lastColumn);
+                        tieneErrores = true;
+                        res.put("temp", "error");
+                        res.put("valor", "error");
+                    } else if (!(v2.matches("^-?\\d+$") || v2.matches("^-?\\d*\\.\\d+$"))) {
+                        System.err.printf("\u001B[31mXXX Error semántico: Operando derecho '%s' no es numérico en operación de potencia. Línea %d, columna %d.\u001B[0m%n",
+                            v2, lastLine, lastColumn);
+                        tieneErrores = true;
+                        res.put("temp", "error");
+                        res.put("valor", "error");
+                    } else {
+                        String t1 = ((HashMap)e1).get("temp").toString();
+                        String t2 = ((HashMap)e2).get("temp").toString();
+                        String temp = genOperacion3D(t1, "^", t2);
+                        res.put("temp", temp);
+                        res.put("valor", v1 + "^" + v2); 
+                    }
+                    RESULT = res;
+                :}
+        | potencia:p {: RESULT = p; :}
+        ;
 
 
 // POTENCIAS
@@ -1575,138 +1581,150 @@ potencia ::= PAR_A expresion:e PAR_C {: RESULT = e; :}
 ;
     
 //UN OPERANDO ES LA FORMA MÁS SENCILLA DE UNA OPERACIÓN
-operando ::= ENTERO:a {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempInt();
-    cod3D(temp + " = " + a);
-    res.put("temp", temp);
-    res.put("valor", a.toString());
-    RESULT = res;
-:}
-| FLOTANTE:f {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempFloat();
-    cod3D(temp + " = " + f);
-    res.put("temp", temp);
-    res.put("valor", f.toString());
-    RESULT = res;
-:}
-| TRUE1 {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempInt();
-    cod3D(temp + " = 1");
-    res.put("temp", temp);
-    res.put("valor", "true");
-    RESULT = res;
-:}
-| FALSE1 {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempInt();
-    cod3D(temp + " = 0");
-    res.put("temp", temp);
-    res.put("valor", "false");
-    RESULT = res;
-:}
-| CHAR:c {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempInt();
-    cod3D(temp + " = " + c);
-    res.put("temp", temp);
-    res.put("valor", c.toString());
-    RESULT = res;
-:}
-| CADENA:s {:
-    HashMap<String,String> res = new HashMap<>();
-    String temp = nuevaTempInt();
-    cod3D(temp + " = " + s);
-    res.put("temp", temp);
-    res.put("valor", s.toString());
-    RESULT = res;
-:}
-| ID:id {:
-    HashMap<String,String> res = new HashMap<>();
-    NodoToken var = buscarID(id.toString());
-    if (var == null) {
-        System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no declarada.\u001B[0m%n", id.toString());
-        tieneErrores = true;
-        res.put("temp","error");
-        res.put("valor","error");
-    } else {
-        String temp = nuevaTempInt();
-        cod3D(temp + " = " + id);
-        res.put("temp", temp);
-        res.put("valor", id.toString());
-    }
-    RESULT = res;
-:}
-| elem_arr:e {:
-    HashMap<String,String> res = new HashMap<>();
-    if (e != null) {
-        String temp = nuevaTempInt();
-        cod3D(temp + " = " + e.toString());
-        res.put("temp", temp);
-        res.put("valor", e.toString());
-    } else {
-        res.put("temp","error");
-        res.put("valor","error");
-    }
-    RESULT = res;
-:}
-| MENOS operando:op {:
-    HashMap<String,String> res = new HashMap<>();
-    if (op != null && !((HashMap)op).get("temp").equals("error")) {
-        String t = ((HashMap)op).get("temp").toString();
-        String v = ((HashMap)op).get("valor").toString();
-        String temp = nuevaTempInt();
-        cod3D(temp + " = -" + t);
-        res.put("temp", temp);
-        res.put("valor", "-" + v);
-    } else {
-        res.put("temp","error");
-        res.put("valor","error");
-    }
-    RESULT = res;
-:}
-| llamada_funcion:llamada {:
-    HashMap<String,String> res = new HashMap<>();
-    if (llamada != null) {
-        String temp = nuevaTempInt();
-        cod3D(temp + " = " + llamada.toString());
-        res.put("temp", temp);
-        res.put("valor", llamada.toString());
-    } else {
-        res.put("temp","error");
-        res.put("valor","error");
-    }
-    RESULT = res;
-:}
-| incrementar:inc {:
-    HashMap<String,String> res = new HashMap<>();
-    if (inc != null) {
-        String temp = nuevaTempInt();
-        cod3D(temp + " = " + inc.toString());
-        res.put("temp", temp);
-        res.put("valor", inc.toString());
-    } else {
-        res.put("temp","error");
-        res.put("valor","error");
-    }
-    RESULT = res;
-:}
-| decrementar:dec {:
-    HashMap<String,String> res = new HashMap<>();
-    if (dec != null) {
-        String temp = nuevaTempInt();
-        cod3D(temp + " = " + dec.toString());
-        res.put("temp", temp);
-        res.put("valor", dec.toString());
-    } else {
-        res.put("temp","error");
-        res.put("valor","error");
-    }
-    RESULT = res;
-:}
-;
+operando ::= ENTERO:a 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempInt();
+            cod3D(temp + " = " + a);
+            res.put("temp", temp);
+            res.put("valor", a.toString());
+            RESULT = res;
+        :}
+    | FLOTANTE:f 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempFloat();
+            cod3D(temp + " = " + f);
+            res.put("temp", temp);
+            res.put("valor", f.toString());
+            RESULT = res;
+        :}
+    | TRUE1 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempInt();
+            cod3D(temp + " = 1");
+            res.put("temp", temp);
+            res.put("valor", "true");
+            RESULT = res;
+        :}
+    | FALSE1 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempInt();
+            cod3D(temp + " = 0");
+            res.put("temp", temp);
+            res.put("valor", "false");
+            RESULT = res;
+        :}
+    | CHAR:c 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempInt();
+            cod3D(temp + " = " + c);
+            res.put("temp", temp);
+            res.put("valor", c.toString());
+            RESULT = res;
+        :}
+    | CADENA:s 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            String temp = nuevaTempInt();
+            cod3D(temp + " = " + s);
+            res.put("temp", temp);
+            res.put("valor", s.toString());
+            RESULT = res;
+        :}
+    | ID:id 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            NodoToken var = buscarID(id.toString());
+            if (var == null) {
+                System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no declarada.\u001B[0m%n", id.toString());
+                tieneErrores = true;
+                res.put("temp","error");
+                res.put("valor","error");
+            } else {
+                String temp = nuevaTempInt();
+                cod3D(temp + " = " + id);
+                res.put("temp", temp);
+                res.put("valor", id.toString());
+            }
+            RESULT = res;
+        :}
+    | elem_arr:e 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            if (e != null) {
+                String temp = nuevaTempInt();
+                cod3D(temp + " = " + e.toString());
+                res.put("temp", temp);
+                res.put("valor", e.toString());
+            } else {
+                res.put("temp","error");
+                res.put("valor","error");
+            }
+            RESULT = res;
+        :}
+    | MENOS operando:op 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            if (op != null && !((HashMap)op).get("temp").equals("error")) {
+                String t = ((HashMap)op).get("temp").toString();
+                String v = ((HashMap)op).get("valor").toString();
+                String temp = nuevaTempInt();
+                cod3D(temp + " = -" + t);
+                res.put("temp", temp);
+                res.put("valor", "-" + v);
+            } else {
+                res.put("temp","error");
+                res.put("valor","error");
+            }
+            RESULT = res;
+        :}
+    | llamada_funcion:llamada 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            if (llamada != null) {
+                String temp = nuevaTempInt();
+                cod3D(temp + " = " + llamada.toString());
+                res.put("temp", temp);
+                res.put("valor", llamada.toString());
+            } else {
+                res.put("temp","error");
+                res.put("valor","error");
+            }
+            RESULT = res;
+        :}
+    | incrementar:inc 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            if (inc != null) {
+                String temp = nuevaTempInt();
+                cod3D(temp + " = " + inc.toString());
+                res.put("temp", temp);
+                res.put("valor", inc.toString());
+            } else {
+                res.put("temp","error");
+                res.put("valor","error");
+            }
+            RESULT = res;
+        :}
+    | decrementar:dec 
+        {:
+            HashMap<String,String> res = new HashMap<>();
+            if (dec != null) {
+                String temp = nuevaTempInt();
+                cod3D(temp + " = " + dec.toString());
+                res.put("temp", temp);
+                res.put("valor", dec.toString());
+            } else {
+                res.put("temp","error");
+                res.put("valor","error");
+            }
+            RESULT = res;
+        :}
+    ;
 
 
 // OPERADORES RELACIONALES
@@ -1720,31 +1738,29 @@ op_rel ::= MAYOR    {: RESULT = ">";  :}
 
 // ESTRUCTURAS DE CONTROL 
 
-// TO-DO: arbol sintáctico para condicionales y bucles
-
 condicional ::=
     DECIDE OF
-    {:
-        // AQUI SE CREA EL SCOPE PARA EL BLOQUE DECIDE
-        contadorDecide++;
-        String decideScope = currentHash + "_DECIDE_" + contadorDecide;
-        crearSubAmbito(decideScope);
-        System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideScope);
-        
-        // Guardar el scope anterior
-        String anteriorScope = currentHash;
-        currentHash = decideScope;
+        {:
+            // AQUI SE CREA EL SCOPE PARA EL BLOQUE DECIDE
+            contadorDecide++;
+            String decideScope = currentHash + "_DECIDE_" + contadorDecide;
+            crearSubAmbito(decideScope);
+            System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideScope);
+            
+            // Guardar el scope anterior
+            String anteriorScope = currentHash;
+            currentHash = decideScope;
 
-        RESULT = anteriorScope;
-    :}
+            RESULT = anteriorScope;
+        :}
     lista_casos
     cond_else_opt
     END DECIDE
-    {:
-        // recuperar el scope en el que estaba antes
-        currentHash = (String) RESULT;
-        System.out.println(">>> [DEBUG] Fin ámbito DECIDE, regresando a: " + currentHash);
-    :}
+        {:
+            // recuperar el scope en el que estaba antes
+            currentHash = (String) RESULT;
+            System.out.println(">>> [DEBUG] Fin ámbito DECIDE, regresando a: " + currentHash);
+        :}
     ;
 
 lista_casos ::= caso
@@ -1753,42 +1769,43 @@ lista_casos ::= caso
 
 caso ::=
     PAR_A expresion PAR_C FLECHA
-    {:
-        // SCOPE POR CADA CASO
-        contadorCase++;
-        String caseScope = currentHash + "_CASE_" + contadorCase;
-        crearSubAmbito(caseScope);
-        System.out.println(">>> [DEBUG] Inicia ámbito CASE: " + caseScope);
+        {:
+            // SCOPE POR CADA CASO
+            contadorCase++;
+            String caseScope = currentHash + "_CASE_" + contadorCase;
+            crearSubAmbito(caseScope);
+            System.out.println(">>> [DEBUG] Inicia ámbito CASE: " + caseScope);
 
-        String anteriorScope = currentHash;
-        currentHash = caseScope;
-        RESULT = anteriorScope;
-    :}
+            String anteriorScope = currentHash;
+            currentHash = caseScope;
+            RESULT = anteriorScope;
+        :}
     bloque
-    {:
-        currentHash = (String) RESULT;
-        System.out.println(">>> [DEBUG] Fin ámbito CASE, regresando a: " + currentHash);
-    :}
+        {:
+            currentHash = (String) RESULT;
+            System.out.println(">>> [DEBUG] Fin ámbito CASE, regresando a: " + currentHash);
+        :}
+    | PAR_A error PAR_C FLECHA bloque
     ;
 
 cond_else_opt ::=
       /* vacío */
     | ELSE FLECHA
-    {:
-        contadorElse++;
-        String elseScope = currentHash + "_ELSE_" + contadorElse;
-        crearSubAmbito(elseScope);
-        System.out.println(">>> [DEBUG] Inicia ámbito ELSE: " + elseScope);
+        {:
+            contadorElse++;
+            String elseScope = currentHash + "_ELSE_" + contadorElse;
+            crearSubAmbito(elseScope);
+            System.out.println(">>> [DEBUG] Inicia ámbito ELSE: " + elseScope);
 
-        String anteriorScope = currentHash;
-        currentHash = elseScope;
-        RESULT = anteriorScope;
-    :}
-      bloque
-    {:
-        currentHash = (String) RESULT;
-        System.out.println(">>> [DEBUG] Fin ámbito ELSE, regresando a: " + currentHash);
-    :}
+            String anteriorScope = currentHash;
+            currentHash = elseScope;
+            RESULT = anteriorScope;
+        :}
+    bloque
+        {:
+            currentHash = (String) RESULT;
+            System.out.println(">>> [DEBUG] Fin ámbito ELSE, regresando a: " + currentHash);
+        :}
     ;
 
 bucle_loop ::=

@@ -56,7 +56,6 @@ FIN_E       =   "$"
 ASIGN       =   "="
 COR_A       =   "["
 COR_C       =   "]"
-COMILLA_SIMP =  "'"
 
 // Operadores
 MAS         =   "+"
@@ -120,7 +119,6 @@ ENTERO          =   (0)|(-?[1-9][0-9]*)
 DECIMALES       =   [0-9]*[1-9]+
 FLOTANTE        =   (0\.0)|(-?(([1-9][0-9]*)\.({DECIMALES}|0))|(0\.{DECIMALES}))
 CHAR            =   \'[^'\n]\'
-CADENA_CHAR     =   \'[^'\n]*\'
 ID              =   [_a-zA-ZñÑ][_0-9a-zA-ZñÑ]*
 
 SPACE           =   [ \t\f\r]
@@ -212,11 +210,6 @@ COMENTARIO = {COM_S}|{COM_C}
     return symbol(sym.CHAR, yytext()); 
 }
 
-<YYINITIAL> {CADENA_CHAR}   { 
-
-    return symbol(sym.CADENA_CHAR, yytext()); 
-}
-
 <YYINITIAL> {ID}            { 
 
     return symbol(sym.ID, yytext());
@@ -233,9 +226,6 @@ COMENTARIO = {COM_S}|{COM_C}
 <YYINITIAL> {ENTER}         { /* ignorar */ }
 <YYINITIAL> {COMENTARIO}    { /* ignorar */ }
 
-<YYINITIAL> {COMILLA_SIMP}  { 
-    return symbol(sym.COMILLA_SIMP, yytext()); 
-}
 
 <YYINITIAL> {COR_A}         { 
     return symbol(sym.COR_A, yytext()); 
