@@ -3,6 +3,7 @@ package salchichon_script;
 import java_cup.runtime.Symbol;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.List;
 import java.io.FileWriter;
 
 // PARSER
@@ -18,9 +19,11 @@ parser code
         String valor;
         String linea;
         String columna;
+        List<String> parametros;
 
         /** Crea un nodo vacío (campos nulos). */
         public NodoToken() {
+            parametros = new ArrayList<>();
         }
 
         /** @return el tipo semántico del símbolo. */
@@ -72,6 +75,21 @@ parser code
         public void setColumna(String columna) {
             this.columna = columna;
         }
+        
+        public List<String> getParametros() {
+            return parametros;
+        }
+
+        public void setParametros(List<String> parametros) {
+            this.parametros = parametros;
+        }
+
+        public void addParametro(String parametro) {
+            if (this.parametros == null) {
+                this.parametros = new ArrayList<>();
+            }
+            this.parametros.add(parametro);
+        }
 
         /** @return representación legible del símbolo y sus metadatos. */
         @Override
@@ -82,6 +100,7 @@ parser code
                 " valor = " + valor + '\n' +
                 " linea = " + linea + '\n' +
                 " columna = " + columna + '\n' +
+                " parametros = " + (parametros != null ? parametros.toString() : "[]") + '\n' +
             '}';
         }
     }
@@ -290,6 +309,29 @@ public void inicarTS() {
     // ==================== Validacion semantica ====================
 
     /**
+    * Obtiene el tipo de retorno de la función actual.
+    * Busca la función en la tabla de símbolos global usando el nombre de la función
+    * derivado de `currentHash`.
+    * 
+    * @return El tipo de retorno de la función actual (por ejemplo, "int", "void", etc.).
+    *         Si no se encuentra la función, retorna "desconocido".
+    */
+    public String obtenerTipoDeFuncionActual() {
+        // Obtener el nombre de la función actual (supone que currentHash es el nombre de la función)
+        String nombreFuncion = currentHash.replace("TS_FUNC_", "");
+        
+        // Buscar la función en la tabla de símbolos
+        for (NodoToken token : listaTablasSimbolos.get(globalHash)) {
+            if (token.getId().equals(nombreFuncion)) {
+                // Si encontramos la función, devolvemos su tipo (el tipo de retorno)
+                return token.getTipo();
+            }
+        }
+        return "desconocido";  // Si no se encuentra la función, retornamos "desconocido"
+    }
+
+
+    /**
     * Valida que el valor literal/asignado sea compatible con el tipo declarado.
     * @param tipoEsperado tipo declarado de la variable destino (int, float, boolean, char, string).
     * @param valorAsignado representación textual del valor/expresión ya reducida.
@@ -495,13 +537,11 @@ public void inicarTS() {
     * @param valor objeto cuya representación {toString()} se interpreta como expresión.
     * @return tipo inferido: "int", "float", "boolean", "string", "char" o "desconocido".
     * Reglas relevantes:
-    * <ul>
-    *   <li>{int / int -> float}</li>
-    *   <li>{int // int -> int} (solo si ambos enteros)</li>
-    *   <li>{int % int -> int} (solo si ambos enteros)</li>
-    *   <li>{int * int -> int}, mixto con float -> {float}</li>
-    *   <li>{^} devuelve {int} si ambos son int, {float} si ambos son float, {desconocido} en mezcla</li>
-    * </ul>
+    *   {int / int -> float}
+    *   {int // int -> int} (solo si ambos enteros)
+    *   {int % int -> int} (solo si ambos enteros)
+    *   {int * int -> int}, mixto con float -> {float}
+    *   {^} devuelve {int} si ambos son int, {float} si ambos son float, {desconocido} en mezcla
     * También consulta {#buscarID(String)} si la expresión es un identificador simple.
     */
     public String obtenerTipoExpresion(Object valor) {
@@ -582,6 +622,8 @@ public void inicarTS() {
         if (t1.equals("string") && t2.equals("string")) return true; // concatenacion
         if (t1.equals("char") && t2.equals("char")) return true;     // concatenacion de chars
         if (t1.equals("boolean") && t2.equals("boolean")) return true;
+
+        if (t1.equals("void") && (t2 == null || t2.isEmpty())) return true;  // El retorno vacío es válido para void
         return false;
     }
 
@@ -871,7 +913,38 @@ sentencia ::= declaracion FIN_E
     | llamada_funcion FIN_E
     | imprimir FIN_E
     | leer FIN_E
-    | RETURN expr_opc FIN_E
+    | RETURN expr_opc:e FIN_E
+        {:
+            if (e != null) {
+                String valorReal;
+                String tempValor;
+
+                if (e instanceof java.util.HashMap) {
+                    valorReal = ((HashMap)e).get("valor").toString();
+                    tempValor = ((HashMap)e).get("temp").toString();
+                } else {
+                    valorReal = e.toString();
+                    tempValor = valorReal;
+                }
+
+                String tipoRetorno = obtenerTipoDeFuncionActual();
+                System.out.println(">>> [DEBUG] Tipo de retorno esperado de la función: " + tipoRetorno);
+                System.out.println(">>> [DEBUG] Expresión en RETURN: " + e.toString());
+
+                String tipoExpresion = obtenerTipoExpresion(valorReal);
+                System.out.println(">>> [DEBUG] Tipo de expresión en RETURN: " + tipoExpresion);
+
+                if (!sonTiposCompatibles(tipoRetorno, tipoExpresion)) {
+                    System.err.printf("\u001B[31mXXX Error semántico XXX : Tipo de expresión en RETURN no coincide con el tipo de retorno de la función. " +
+                        "Se esperaba '%s' pero se obtuvo '%s'. Línea %d, columna %d.\u001B[0m%n", tipoRetorno, tipoExpresion, lastLine, lastColumn);
+                    tieneErrores = true;
+                } else {
+                    String temp = nuevaTempInt(); 
+                    cod3D(temp + " = " + tempValor);
+                    cod3D("return " + temp);
+                }
+            }
+        :}
     | BREAK FIN_E
     | incrementar FIN_E
     | decrementar FIN_E
@@ -885,16 +958,144 @@ incrementar ::= ID INC;
 decrementar ::= ID DEC;
 
 expr_opc ::=
-      expresion
+      expresion:e
+        {: RESULT = e; :}
     | /* ε */
     ;
 
-llamada_funcion ::= ID PAR_A parametros_llamada PAR_C;
+llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
+                    {:
+                        System.out.println(">>> [DEBUG] Llamada a función: " + nombreFunc + 
+                            " con parámetros: " + (parametros != null ? parametros.toString() : "ninguno"));
 
-parametros_llamada ::= expresion
-                        | expresion COMA parametros_llamada
-                        |
-                        ;
+                        NodoToken funcToken = buscarID(nombreFunc.toString());
+                        if (funcToken == null) {
+                            System.err.printf("\u001B[31mXXX Error semántico XXX : Función '%s' no declarada. Línea %d, columna %d.\u001B[0m%n",
+                                nombreFunc.toString(), lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            java.util.List<String> definidos = funcToken.getParametros();
+                            java.util.List<String> llamados = new java.util.ArrayList<>();
+
+                            if (parametros != null && !parametros.toString().isEmpty()) {
+                                String[] enviados = parametros.toString().split(",");
+                                for (String p : enviados) {
+                                    p = p.trim();
+                                    if (!p.isEmpty()) llamados.add(p);
+                                }
+                            }
+
+                            if (definidos.size() != llamados.size()) {
+                                System.err.printf("\u001B[31mXXX Error semántico XXX : La función '%s' esperaba %d parámetros, pero se enviaron %d. Línea %d, columna %d.\u001B[0m%n",
+                                    nombreFunc, definidos.size(), llamados.size(), lastLine, lastColumn);
+                                tieneErrores = true;
+                            } else {
+                                for (int i = 0; i < definidos.size(); i++) {
+                                    String paramDef = definidos.get(i);
+                                    NodoToken declParam = null;
+
+                                    String funcScope = "TS_FUNC_" + nombreFunc;
+                                    if (listaTablasSimbolos.containsKey(funcScope)) {
+                                        for (NodoToken t : listaTablasSimbolos.get(funcScope)) {
+                                            if (t.getId().equals(paramDef)) {
+                                                declParam = t;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    String paramLlamado = llamados.get(i);
+                                    String tipoEnviado = obtenerTipoExpresion(paramLlamado);
+                                    String tipoEsperado = declParam != null ? declParam.getTipo() : "desconocido";
+
+                                    if (!sonTiposCompatibles(tipoEsperado, tipoEnviado)) {
+                                        System.err.printf("\u001B[31mXXX Error semántico XXX : En parámetro #%d de función '%s', se esperaba tipo '%s' pero se envió '%s'. Línea %d, columna %d.\u001B[0m%n",
+                                            i + 1, nombreFunc, tipoEsperado, tipoEnviado, lastLine, lastColumn);
+                                        tieneErrores = true;
+                                    }
+                                }
+
+                                for (String param : llamados) {
+                                    String tipoParametro = obtenerTipoExpresion(param);
+                                    String temp = "";
+
+                                    if ("int".equals(tipoParametro)) {
+                                        temp = nuevaTempInt();
+                                    } else if ("float".equals(tipoParametro)) {
+                                        temp = nuevaTempFloat();
+                                    } else {
+                                        temp = nuevaTempInt();
+                                    }
+
+                                    cod3D(temp + " = " + param);
+                                    cod3D("param " + temp);
+                                }
+
+                                String funcTemp = nuevaTempInt();
+                                String tipoRetorno = funcToken.getTipo();
+
+                                if (!"void".equals(tipoRetorno)) {
+                                    cod3D(funcTemp + " = call " + nombreFunc + "()");
+                                    System.out.println(">>> [DEBUG] Llamada a la función con retorno: " + nombreFunc);
+
+                                    NodoToken tempRet = new NodoToken();
+                                    tempRet.setId(funcTemp);                 // el nombre del temporal (tXX)
+                                    tempRet.setTipo(tipoRetorno);            // tipo de retorno
+                                    tempRet.setValor("retorno_" + nombreFunc);
+                                    tempRet.setLinea(String.valueOf(lastLine));
+                                    tempRet.setColumna(String.valueOf(lastColumn));
+                                    
+                                    // Agregar los parámetros de la función original
+                                    tempRet.setParametros(new java.util.ArrayList<>(funcToken.getParametros()));
+
+                                    listaTablasSimbolos.get(currentHash).add(tempRet);
+
+                                    System.out.println(">>> [DEBUG] Temporal de retorno registrado: " + funcTemp + 
+                                        " tipo=" + tipoRetorno + " params=" + funcToken.getParametros());
+                                } else {
+                                    cod3D("call " + nombreFunc + "()");
+                                    System.out.println(">>> [DEBUG] Llamada a la función sin retorno: " + nombreFunc);
+                                }
+
+                                RESULT = funcTemp;
+                            }
+                        }
+                    :}
+                ;
+
+
+parametros_llamada ::= expresion:e
+                        {:
+                            String valorReal;
+                            String tempValor;
+                            if (e instanceof java.util.HashMap) {
+                                valorReal = ((HashMap)e).get("valor").toString();
+                                tempValor = ((HashMap)e).get("temp").toString();
+                            } else {
+                                valorReal = e.toString();
+                                tempValor = valorReal;
+                            }
+                            RESULT = valorReal;
+                        :}
+                    | expresion:e COMA parametros_llamada:pl
+                        {:
+                            String valorReal;
+                            String tempValor;
+                            if (e instanceof java.util.HashMap) {
+                                valorReal = ((HashMap)e).get("valor").toString();
+                                tempValor = ((HashMap)e).get("temp").toString(); 
+                            } else {
+                                valorReal = e.toString();
+                                tempValor = valorReal;
+                            }
+                            RESULT = valorReal + "," + pl.toString();
+                        :}
+                    | /* vacío */
+                        {:
+                            RESULT = "";
+                        :}
+                    ;
+
 
 imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                 {:
@@ -910,45 +1111,60 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                             tempValor = valorReal;
                         }
 
-                        NodoToken posibleVar = buscarID(valorReal);
+                        String tipoExpr = obtenerTipoExpresion(valorReal);
+                        if ("void".equals(tipoExpr)) {
+                            System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'void'. Línea %d, columna %d.\u001B[0m%n",
+                                lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else {
+                            if (valorReal != "error") {
 
-                        cod3D("print " + tempValor);
+                                cod3D("param " + tempValor);
+                                cod3D("call output()");
+                                System.out.println(">>> [3AC] param " + tempValor);
+                                System.out.println(">>> [3AC] call output()");
 
-                        NodoToken imp = new NodoToken();
-                        imp.setTipo("llamada_funcion_sistema");
-                        imp.setId("imprimir");
-                        imp.setValor(valorReal);
-                        imp.setLinea(String.valueOf(lastLine));
-                        imp.setColumna(String.valueOf(lastColumn));
-                        listaTablasSimbolos.get(currentHash).add(imp);
+                                NodoToken imp = new NodoToken();
+                                imp.setTipo("llamada_funcion_sistema");
+                                imp.setId("imprimir");
+                                imp.setValor(valorReal);
+                                imp.setLinea(String.valueOf(lastLine));
+                                imp.setColumna(String.valueOf(lastColumn));
+                                listaTablasSimbolos.get(currentHash).add(imp);
 
-                        System.out.println(">>> [DEBUG] Uso de imprimir() en " + currentHash + 
-                                        " con valor: " + valorReal + 
-                                        " (temp: " + tempValor + ")");
+                                System.out.println(">>> [DEBUG] Uso de output() en " + currentHash +
+                                    " con valor: " + valorReal + " (temp: " + tempValor + ")");
+                            }
+                        }
                     } else {
-                        System.err.printf("\u001B[31mXXX Error semántico: llamada a imprimir() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
+                        System.err.printf("\u001B[31mXXX Error semántico: llamada a output() sin expresión válida. Línea %d, columna %d.\u001B[0m%n",
                             lastLine, lastColumn);
                         tieneErrores = true;
                     }
 
-                    RESULT = null; 
+                    RESULT = null;
                 :}
+            | IMPRIMIR PAR_A error PAR_C
             ;
 
 
-leer ::= LEER PAR_A PAR_C
-            {:
-                NodoToken leerNode = new NodoToken();
-                leerNode.setTipo("llamada_funcion_sistema");
-                leerNode.setId("leer");
-                leerNode.setValor("entrada_usuario");
-                leerNode.setLinea(String.valueOf(lastLine));
-                leerNode.setColumna(String.valueOf(lastColumn));
-                listaTablasSimbolos.get(currentHash).add(leerNode);
-                System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash);
-            :}
-        | LEER PAR_A ID:var PAR_C
-            {:
+leer ::= LEER PAR_A ID:var PAR_C
+        {:
+            NodoToken varTok = buscarID(var.toString());
+            if (varTok == null) {
+                System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no ha sido declarada antes de leer(). Línea %d, columna %d.\u001B[0m%n",
+                    var.toString(), lastLine, lastColumn);
+                tieneErrores = true;
+            } 
+            else {
+
+                String temp = nuevaTempInt();
+                cod3D(temp + " = call input()");
+                cod3D(var + " = " + temp);
+
+                System.out.println(">>> [3AC] " + temp + " = call input()");
+                System.out.println(">>> [3AC] " + var + " = " + temp);
+
                 NodoToken leerNode = new NodoToken();
                 leerNode.setTipo("llamada_funcion_sistema");
                 leerNode.setId("leer");
@@ -956,23 +1172,78 @@ leer ::= LEER PAR_A PAR_C
                 leerNode.setLinea(String.valueOf(lastLine));
                 leerNode.setColumna(String.valueOf(lastColumn));
                 listaTablasSimbolos.get(currentHash).add(leerNode);
-                System.out.println(">>> [DEBUG] Uso de leer() en " + currentHash + ", asignando a " + var);
-            :}
+
+                System.out.println(">>> [DEBUG] Uso de input() asignando a " + var + " en " + currentHash);
+            }
+
+            RESULT = null;
+        :}
         ;
 
 
 //+++++++++++++++++++++FUNCIONES++++++++++++++++++++++++++++++++
 
-funcion ::= declara_func PAR_A parametros_opt:params PAR_C bloque
+funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C 
+                {:
+
+                    NodoToken func = buscarID(nombreFun.toString());
+                    System.out.println(">>> [DEBUG] Procesando función: " + nombreFun);
+                    System.out.println(">>> [DEBUG] Tabla de símbolos actual: " + currentHash);
+                    System.out.println(">>> [DEBUG] Parámetros recibidos: " + params);
+                    if (params != null && !params.toString().isEmpty()) {
+                        String[] lista = params.toString().split(",");
+                        for (String p : lista) {
+                            p = p.trim();
+                            if (!p.isEmpty()) {
+                                func.addParametro(p);
+
+                                NodoToken paramTok = new NodoToken();
+                                paramTok.setId(p);
+                                paramTok.setTipo("desconocido"); 
+                                paramTok.setLinea(String.valueOf(lastLine));
+                                paramTok.setColumna(String.valueOf(lastColumn));
+
+                                if (!listaTablasSimbolos.containsKey("TS_FUNC_" + nombreFun.toString()))
+                                    listaTablasSimbolos.put("TS_FUNC_" + nombreFun.toString(), new ArrayList<>());
+                                listaTablasSimbolos.get("TS_FUNC_" + nombreFun.toString()).add(paramTok);
+
+                                // código intermedio
+                                String temp = nuevaTempInt();
+                                cod3D(temp + " = " + p);
+
+                                System.out.println(">>> [DEBUG] Parámetro agregado a " + nombreFun + ": " + p);
+                            }
+                        }
+                    }
+                    System.out.println(">>> [DEBUG] Parámetros de la función " + nombreFun + ": " + func.getParametros());
+                    cod3D("\n" + nombreFun + ":");
+                :}
+        bloque
                 {:
                     currentHash = globalHash;
                     System.out.println(">> [TS] Regresando a tabla global.");
                 :}
-          | declara_func PAR_A parametros_opt PAR_C error
-          | declara_func PAR_A error PAR_C bloque
-          ;
+        | declara_func PAR_A parametros_opt PAR_C error
+        | declara_func PAR_A error PAR_C bloque
+        ;
 
-declara_func::= tipo_funcion:tipoFun ID:nombreFun
+lista_parametros ::= parametro:p
+                        {:
+                            RESULT = p;
+                            System.out.println(">>> [DEBUG] Parámetro único: " + p);
+                        :}
+                    | parametro:p COMA lista_parametros:l
+                        {:
+                            RESULT = p + "," + l;
+                            System.out.println(">>> [DEBUG] Agregando parámetro: " + p + " => lista: " + RESULT);
+                        :}
+                    | /* vacío */
+                        {:
+                            RESULT = "";
+                        :}
+                    ;
+
+declara_func ::= tipo_funcion:tipoFun ID:nombreFun 
                 {:
                     NodoToken func = new NodoToken();
                     func.setId(nombreFun.toString());
@@ -982,27 +1253,15 @@ declara_func::= tipo_funcion:tipoFun ID:nombreFun
                     listaTablasSimbolos.get(globalHash).add(func);
 
                     currentHash = "TS_FUNC_" + nombreFun.toString();
-                    listaTablasSimbolos.put(currentHash, new ArrayList<>());
+                    if (!listaTablasSimbolos.containsKey(currentHash))
+                        listaTablasSimbolos.put(currentHash, new ArrayList<>());
                     System.out.println(">>> [DEBUG] Función creada: " + currentHash);
-
-
-                    // CODIGO INTERMEDIO
-                    cod3D("\n" + nombreFun + ":");
+                    RESULT = nombreFun.toString();
                 :}
             ;
 
-parametros_opt ::= lista_parametros
-                 | // VACIO
-                 ;
-
-lista_parametros ::= parametro
-                  | lista_parametros COMA parametro
-                  ;
-
-// TO-DO: AGREGAR PARAMETROS A codigo intermedio 
 parametro ::= tipo:ti ID:nombreParam
                 {:
-
                     if (esIdExistente(currentHash, nombreParam.toString())) {
                         System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
                             nombreParam.toString(), lastLine, lastColumn);
@@ -1011,9 +1270,20 @@ parametro ::= tipo:ti ID:nombreParam
                         NodoToken param = new NodoToken();
                         param.setTipo(ti);
                         param.setId(nombreParam.toString());
-                        param.setLinea(String.valueOf(lastLine));
+                        param.setLinea(String.valueOf(lastLine)); 
                         param.setColumna(String.valueOf(lastColumn));
+
                         listaTablasSimbolos.get(currentHash).add(param);
+
+                        String temp = "";
+                        if ("int".equals(ti)) {
+                            temp = nuevaTempInt();
+                        } else if ("float".equals(ti)) {
+                            temp = nuevaTempFloat();
+                        } else {
+                            temp = nuevaTempInt(); 
+                        }
+                        RESULT = nombreParam.toString();
                         System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
                     }
                 :}
@@ -1065,14 +1335,15 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                                     tempValor = valorReal;
                                 }
 
-                                //validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                if (!(valorReal == "error" || tempValor == "error")) {
+                                    declaracion.setValor(valorReal);
 
-                                declaracion.setValor(valorReal);
+                                    cod3D(nombreDeclaracion + " = " + tempValor);
 
-                                cod3D(nombreDeclaracion + " = " + tempValor);
-
-                                System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
-                                    + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
+                                    System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
+                                        + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
+                                }
                             } else {
                                 declaracion.setValor(null);
                                 System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
@@ -1084,6 +1355,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                             listaTablasSimbolos.get(currentHash).add(declaracion);
                         }
                     :}
+                | LET tipo ID ASIGN error 
                 ;
 
 
@@ -1174,10 +1446,12 @@ asignacion ::= ID:nombre ASIGN expresion:valor
                                 }
 
                                 validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
-                                cod3D(nombre + " = " + tempValor);
-                                variable.setValor(valorReal);
+                                if (!(valorReal == "error" || tempValor == "error")) {
+                                    cod3D(nombre + " = " + tempValor);
+                                    variable.setValor(valorReal);
 
-                                System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
+                                    System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
+                                }
                             } else {
                                 variable.setValor(null);
                             }
@@ -1273,13 +1547,12 @@ expresion ::= expresion:e1 AND expresion:e2
                         } else {
                             opTemp = e.toString();
                             opValor = e.toString();
+                            String temp = nuevaTempInt();
+                            cod3D(temp + " = !" + opTemp);
+                            res.put("temp", temp);
+                            res.put("valor", "!" + opValor);
+                            RESULT = res;
                         }
-
-                        String temp = nuevaTempInt();
-                        cod3D(temp + " = !" + opTemp);
-                        res.put("temp", temp);
-                        res.put("valor", "!" + opValor);
-                        RESULT = res;
                     :}
 
             | expresion_arit:e1 op_rel:op expresion_arit:e2
@@ -1700,13 +1973,11 @@ operando ::= ENTERO:a
         {:
             HashMap<String,String> res = new HashMap<>();
             if (llamada != null) {
-                String temp = nuevaTempInt();
-                cod3D(temp + " = " + llamada.toString());
-                res.put("temp", temp);
+                res.put("temp", llamada.toString());
                 res.put("valor", llamada.toString());
             } else {
-                res.put("temp","error");
-                res.put("valor","error");
+                res.put("temp", "error");
+                res.put("valor", "error");
             }
             RESULT = res;
         :}
