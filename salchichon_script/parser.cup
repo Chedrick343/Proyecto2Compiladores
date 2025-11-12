@@ -1869,7 +1869,7 @@ bucle_for ::=
         RESULT = anteriorScope;
         
     :}
-    DO bloque
+        DO bloque
     {:
         String forFinal = currentHash + "_endfor_" + contadorFor;
         cod3D("goto " +currentHash);
@@ -1878,7 +1878,6 @@ bucle_for ::=
         currentHash = (String) RESULT;
         System.out.println(">>> [DEBUG] Fin ámbito FOR, regresando a: " + currentHash);
     :}
-    
     ;
 
 step ::= /* vacío */
