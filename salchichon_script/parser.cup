@@ -906,6 +906,7 @@ asignacion_arreglo::=
     ;
 elemento_arreglo ::= ID BLO_A ENTEROPO BLO_C
 ;
+
 sentencia ::= declaracion FIN_E
     | declaracion_arreglo_entero FIN_E
     | declaracion_arreglo_char FIN_E
@@ -915,37 +916,50 @@ sentencia ::= declaracion FIN_E
     | imprimir FIN_E
     | leer FIN_E
     | RETURN expr_opc:e FIN_E
-        {:
-            if (e != null) {
-                String valorReal;
-                String tempValor;
-
-                if (e instanceof java.util.HashMap) {
-                    valorReal = ((HashMap)e).get("valor").toString();
-                    tempValor = ((HashMap)e).get("temp").toString();
-                } else {
-                    valorReal = e.toString();
-                    tempValor = valorReal;
-                }
-
+            {:
                 String tipoRetorno = obtenerTipoDeFuncionActual();
-                System.out.println(">>> [DEBUG] Tipo de retorno esperado de la función: " + tipoRetorno);
-                System.out.println(">>> [DEBUG] Expresión en RETURN: " + e.toString());
-
-                String tipoExpresion = obtenerTipoExpresion(valorReal);
-                System.out.println(">>> [DEBUG] Tipo de expresión en RETURN: " + tipoExpresion);
-
-                if (!sonTiposCompatibles(tipoRetorno, tipoExpresion)) {
-                    System.err.printf("\u001B[31mXXX Error semántico XXX : Tipo de expresión en RETURN no coincide con el tipo de retorno de la función. " +
-                        "Se esperaba '%s' pero se obtuvo '%s'. Línea %d, columna %d.\u001B[0m%n", tipoRetorno, tipoExpresion, lastLine, lastColumn);
-                    tieneErrores = true;
+                if (e == null) {
+                    if (!"void".equals(tipoRetorno)) {
+                        System.err.printf(
+                            "\u001B[31mXXX Error semántico XXX : La función requiere retornar '%s' pero no se retornó valor. Línea %d, columna %d.\u001B[0m%n",
+                            tipoRetorno, lastLine-1, lastColumn
+                        );
+                        tieneErrores = true;
+                    } else {
+                        cod3D("call return()");
+                    }
                 } else {
-                    String temp = nuevaTempInt(); 
-                    cod3D(temp + " = " + tempValor);
-                    cod3D("return " + temp);
+                    if ("void".equals(tipoRetorno)) {
+                        System.err.printf(
+                            "\u001B[31mXXX Error semántico XXX : Una función 'void' no debe retornar un valor. Línea %d, columna %d.\u001B[0m%n",
+                            lastLine-1, lastColumn
+                        );
+                        tieneErrores = true;
+                    } else {
+                        String valorReal, tempValor;
+                        if (e instanceof java.util.HashMap) {
+                            valorReal = ((HashMap)e).get("valor").toString();
+                            tempValor = ((HashMap)e).get("temp").toString();
+                        } else {
+                            valorReal = e.toString();
+                            tempValor = valorReal;
+                        }
+
+                        String tipoExpr = obtenerTipoExpresion(valorReal);
+
+                        if (!sonTiposCompatibles(tipoRetorno, tipoExpr)) {
+                            System.err.printf(
+                                "\u001B[31mXXX Error semántico XXX : Tipo de expresión en RETURN no coincide con el tipo de retorno. Se esperaba '%s' y se obtuvo '%s'. Línea %d, columna %d.\u001B[0m%n",
+                                tipoRetorno, tipoExpr, lastLine-1, lastColumn
+                            );
+                            tieneErrores = true;
+                        } else {
+                            cod3D("param " + tempValor);
+                            cod3D("call return()");
+                        }
+                    }
                 }
-            }
-        :}
+            :}
     | BREAK FIN_E
     | incrementar FIN_E
     | decrementar FIN_E
@@ -963,6 +977,7 @@ expr_opc ::=
       expresion:e
         {: RESULT = e; :}
     | /* ε */
+        {: RESULT = null; :}
     ;
 
 llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
@@ -1218,12 +1233,13 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                         }
                     }
                     System.out.println(">>> [DEBUG] Parámetros de la función " + nombreFun + ": " + func.getParametros());
-                    cod3D("\n" + nombreFun + ":");
+                    cod3D(nombreFun + ":");
                 :}
         bloque
                 {:
                     currentHash = globalHash;
                     System.out.println(">> [TS] Regresando a tabla global.");
+                    cod3D(nombreFun + "_end:\n\n");
                 :}
         | declara_func PAR_A parametros_opt PAR_C error
         | declara_func PAR_A error PAR_C bloque
@@ -1941,7 +1957,10 @@ operando ::= ENTERO:a
             HashMap<String,String> res = new HashMap<>();
             NodoToken var = buscarID(id.toString());
             if (var == null) {
-                System.err.printf("\u001B[31mXXX Error semántico: variable '%s' no declarada.\u001B[0m%n", id.toString());
+                System.err.printf(
+                    "\u001B[31mXXX Error semántico: variable '%s' no declarada. Línea %d, columna %d.\u001B[0m%n",
+                    id.toString(), lastLine, lastColumn
+                );
                 tieneErrores = true;
                 res.put("temp","error");
                 res.put("valor","error");

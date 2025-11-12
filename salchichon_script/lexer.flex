@@ -241,8 +241,8 @@ COMENTARIO = {COM_S}|{COM_C}
 }
 
 <YYINITIAL> . {
-    String errLex = "\u001B[31m Error léxico : '"+yytext()+"' en la línea: "+(yyline+1)+" y columna: "+(yycolumn+1) + "\u001B[0m ";
-    System.out.println(errLex);
+    //String errLex = "\u001B[31m Error léxico : '"+yytext()+"' en la línea: "+(yyline+1)+" y columna: "+(yycolumn+1) + "\u001B[0m ";
+    //System.out.println(errLex);
 }
 
 <CADENA> {
