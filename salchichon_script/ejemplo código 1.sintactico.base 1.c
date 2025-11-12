@@ -56,9 +56,12 @@ init void principal є  э  ¿
 ¡
 Comentario 1
 !
- 	let int arr¿67? = ¿1,2,3,4,5?$ |semantico
+ 	let int arr¿67?$|semantico
+	arr¿12?$
+	let char arreglo2¿20?$
+	arreglo2¿12?$
 	let char miChar='!'$
-	let char miChar2='!!'$ |sintactico
+	let char miChar2='!'$ |sintactico
 	let string str1="Mi string 1"$
 	let float fl1$
 	let float fl1=56.6$ |semantico fl1
