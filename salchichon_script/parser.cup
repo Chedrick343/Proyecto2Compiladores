@@ -681,7 +681,7 @@ terminal OF, ELSE, END, LOOP, EXIT, WHEN, FOR1, STEP, TO, DOWNTO, DO;
 terminal RETURN, BREAK;
 terminal INIT;
 
-terminal ENTERO, FLOTANTE, CHAR, ID;
+terminal ENTERO, FLOTANTE, CHAR, ID, ENTEROPO;
 terminal IMPRIMIR, LEER, MAIN, CADENA;
 
 // NO TERMINALES
@@ -696,7 +696,7 @@ non terminal expresion;
 non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo; 
+non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo, elemento_arreglo; 
 non terminal declara_func, declara_main_func;
 
 // PRECEDENCIA
@@ -862,7 +862,8 @@ asignacion_arreglo::=
         }
     :}
     ;
-
+elemento_arreglo ::= ID BLO_A ENTEROPO BLO_C
+;
 sentencia ::= declaracion FIN_E
     | declaracion_arreglo_entero FIN_E
     | declaracion_arreglo_char FIN_E
@@ -879,6 +880,7 @@ sentencia ::= declaracion FIN_E
     | bucle_loop 
     | bucle_for
     | error FIN_E
+    | elemento_arreglo FIN_E
     ;
 
 incrementar ::= ID INC;
@@ -1117,6 +1119,7 @@ declaracion_arreglo_entero ::= LET tipo ID:nombreArreglo BLO_A ENTERO BLO_C ASIG
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
                                     System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
                                 :}
+                                | LET tipo ID:nombreArreglo BLO_A ENTEROPO BLO_C
                             ;
 
 declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C ASIGN arreglo_char:valoresChar
@@ -1134,6 +1137,16 @@ declaracion_arreglo_char ::= LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C AS
                                         declaracion.setValor("arreglo_char");
                                         System.out.println(">>> [DEBUG] Arreglo de chars declarado SIN valor específico: " + nombreArregloChar.toString() + " en " + currentHash);
                                     }
+                                    declaracion.setLinea(String.valueOf(lastLine));
+                                    declaracion.setColumna(String.valueOf(lastColumn));
+                                    listaTablasSimbolos.get(currentHash).add(declaracion);
+                                :}
+                                | LET tipo ID:nombreArregloChar BLO_A ENTERO BLO_C
+                                {:
+                                    NodoToken declaracion = new NodoToken();
+                                    declaracion.setTipo("arreglo_char");
+                                    declaracion.setId(nombreArregloChar.toString());
+                                    
                                     declaracion.setLinea(String.valueOf(lastLine));
                                     declaracion.setColumna(String.valueOf(lastColumn));
                                     listaTablasSimbolos.get(currentHash).add(declaracion);
@@ -1667,20 +1680,7 @@ operando ::= ENTERO:a
             }
             RESULT = res;
         :}
-    | elem_arr:e 
-        {:
-            HashMap<String,String> res = new HashMap<>();
-            if (e != null) {
-                String temp = nuevaTempInt();
-                cod3D(temp + " = " + e.toString());
-                res.put("temp", temp);
-                res.put("valor", e.toString());
-            } else {
-                res.put("temp","error");
-                res.put("valor","error");
-            }
-            RESULT = res;
-        :}
+    | elemento_arreglo
     | MENOS operando:op 
         {:
             HashMap<String,String> res = new HashMap<>();

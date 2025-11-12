@@ -3,7 +3,7 @@
 let bool _b1_$
 
  float func1 є char x22,char x22 э  ¿ |semantico borrar parametro
-
+ 	let char arregloChar¿20? = ¿'a','n'?$
 	let int numero$ let char letra$
 	numero = 10$
 	letra = 'a'$
