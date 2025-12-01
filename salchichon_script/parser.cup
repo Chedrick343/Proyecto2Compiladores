@@ -1397,7 +1397,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                                     tempValor = valorReal;
                                 }
 
-                                validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                // validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     declaracion.setValor(valorReal);
 
@@ -1576,7 +1576,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
                                     tempValor = valorReal;
                                 }
 
-                                validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+                                // validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     cod3D(nombre + " = " + tempValor);
                                     variable.setValor(valorReal);
