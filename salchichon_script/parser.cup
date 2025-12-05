@@ -948,6 +948,7 @@ elemento_arreglo ::= ID:nombreArreglo BLO_A expresion:tamano BLO_C
                 nombreArreglo.toString(), lastLine, lastColumn);
             tieneErrores = true;
         }
+        RESULT = nombreArreglo;
     :}
 ;
 
@@ -1397,7 +1398,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                                     tempValor = valorReal;
                                 }
 
-                                //validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                // validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     declaracion.setValor(valorReal);
 
@@ -1576,7 +1577,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
                                     tempValor = valorReal;
                                 }
 
-                                //validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+                                // validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     cod3D(nombre + " = " + tempValor);
                                     variable.setValor(valorReal);
@@ -2078,13 +2079,20 @@ operando ::= ENTERO:a
         HashMap<String,String> res = new HashMap<>();
         if (e != null) {
             String temp = nuevaTempInt();
-            cod3D(temp + " = " + e.toString());
             res.put("temp", temp);
-            res.put("valor", e.toString());
+            NodoToken elementoArreglo = buscarID(e.toString());
+            if(elementoArreglo.getTipo() == "arreglo_entero"){
+                cod3D(temp + " = " + " 1");
+                res.put("valor", "1");
+            }else{
+                res.put("valor", "error");
+            }
+            
         } else {
             res.put("temp","error");
             res.put("valor","error");
         }
+        System.out.println(">>> [DEBUG] Acceso a elemento de arreglo, temp: " + res.get("temp") + ", id: " + res.get("id"));
         RESULT = res;
     :}
     | MENOS operando:op 
