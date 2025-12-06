@@ -766,7 +766,7 @@ terminal IMPRIMIR, LEER, MAIN, CADENA;
 // NO TERMINALES
 non terminal Object program;
 non terminal main_funcion, elemento_global, lista_global;
-non terminal String tipo, tipo_funcion;
+non terminal String tipo, tipo_funcion, tipoRes;
 non terminal declaracion;
 non terminal bloque, lista_sentencias, lista_sentencias_opt, sentencia, expr_opc, llamada_funcion, parametros_llamada, imprimir, leer;
 non terminal funcion, parametros_opt, lista_parametros, parametro;
@@ -853,6 +853,12 @@ declara_main_func ::= INIT VOID:tipo MAIN:main
 // ======== DECLARACIÓN DE VARIABLES ========
 tipo ::= INT1 {: RESULT = "int"; :}
     | STR1 {: RESULT = "string"; :}
+    | FLOAT1 {: RESULT = "float"; :}
+    | BOOL1 {: RESULT = "boolean"; :}
+    | CHAR1 {: RESULT = "char"; :}
+    ;
+
+tipoRes ::= INT1 {: RESULT = "int"; :}
     | FLOAT1 {: RESULT = "float"; :}
     | BOOL1 {: RESULT = "boolean"; :}
     | CHAR1 {: RESULT = "char"; :}
@@ -1054,6 +1060,11 @@ sentencia ::= declaracion FIN_E
                                 "\u001B[31mXXX Error semántico XXX : Tipo de expresión en RETURN no coincide con el tipo de retorno. Se esperaba '%s' y se obtuvo '%s'. Línea %d, columna %d.\u001B[0m%n",
                                 tipoRetorno, tipoExpr, lastLine-1, lastColumn
                             );
+                            tieneErrores = true;
+                        }
+                        if(tipoRetorno == "string"){
+                            System.out.printf("\u001B[31mXXX Error semántico XXX : No puedes crear funciones de tipo string. Línea %d, columna %d.\u001B[0m%n",
+                            lastLine-1, lastColumn);
                             tieneErrores = true;
                         } else {
                             cod3D("param " + tempValor);

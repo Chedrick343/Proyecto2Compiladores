@@ -45,7 +45,7 @@ let float f = 2.4 $
 	let int _i_$
 	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
 	output є "Hola mundo" э $
-	input є x22 э $
+	input є _i_ э $
 	return -5.6$|cambio en retorno genera semantico
  ?  
 
@@ -57,7 +57,7 @@ let float f = 2.4 $
 string _func3_  є  э   ¿  |semantico string
 	let string _b1_$
 	return _b1_$ 
-  ? |No permitir reetorno string
+  ? |No permitir reetorno string ...fixed... Se valido semanticamente 
 
 init void principal є  э  ¿ 
 ¡

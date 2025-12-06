@@ -42,7 +42,7 @@ let float f = 2.4$
 	let int _i_$
 	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
 	output є "Hola mundo" э $
-	input є x22 э $ | TO-DO: ERROR NO DEBE PERMITIR CHAR
+	input є x22 э $ | TO-DO: ERROR NO DEBE PERMITIR CHAR ...fixed...
 	return -5.6$
  ?  
 
