@@ -57,7 +57,7 @@ let float f = 2.4 $
 string _func3_  є  э   ¿  |semantico string
 	let string _b1_$
 	return _b1_$ 
-  ? |No permitir reetorno string ...fixed... Se valido semanticamente 
+  ? |No permitir reetorno string ...fixed... Se valido semanticamente que si el tipo de la funcion es string se devuelv error 
 
 init void principal є  э  ¿ 
 ¡

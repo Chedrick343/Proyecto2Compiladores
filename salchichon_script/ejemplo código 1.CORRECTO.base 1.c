@@ -42,7 +42,7 @@ let float f = 2.4$
 	let int _i_$
 	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
 	output є "Hola mundo" э $
-	input є x22 э $ | TO-DO: ERROR NO DEBE PERMITIR CHAR ...fixed...
+	input є x22 э $ | TO-DO: ERROR NO DEBE PERMITIR CHAR ...fixed... validamos el tipo que se está ingresando
 	return -5.6$
  ?  
 
@@ -54,7 +54,7 @@ let float f = 2.4$
 string _func3_  є  э   ¿  |semantico string
 	let string _b1_$
 	return _b1_$ 
-  ? |TO-DO NO PERMITIR RETORNAR STRING
+  ? |TO-DO NO PERMITIR RETORNAR STRING ...fixed... se valida el tipo de la función y si es string se arroja error semántico.
 
 init void principal є  э  ¿ 
 ¡
@@ -83,7 +83,7 @@ Comentario 1
 	let bool bl1 = in1 >= w ~ false @ Σ є func1 є 'A', 'd'э  > 1.6  э $ |semantico in1 >= fl1, func2
 	
 	
-	output є true э $ | TO-DO: SOLO DEBE PERMITIRL STRING, INT, FLOAT, CHAR
+	output є true э $ | TO-DO: SOLO DEBE PERMITIRL STRING, INT, FLOAT, CHAR ...fixed... Se ha corregido, si el valor ingresado es de tipo bool se imprime un error
 	loop
 		let int _var_2 = w - 1$ |semantico
 		let int _var_ = w - 1$ |semantico

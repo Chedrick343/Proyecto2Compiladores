@@ -1063,7 +1063,7 @@ sentencia ::= declaracion FIN_E
                             tieneErrores = true;
                         }
                         if(tipoRetorno == "string"){
-                            System.out.printf("\u001B[31mXXX Error semántico XXX : No puedes crear funciones de tipo string. Línea %d, columna %d.\u001B[0m%n",
+                            System.out.printf("\u001B[31mXXX Error semántico XXX : No puedes crear funciones que retornen tipo string. Línea %d, columna %d.\u001B[0m%n",
                             lastLine-1, lastColumn);
                             tieneErrores = true;
                         } else {
@@ -1269,6 +1269,11 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                         }
 
                         String tipoExpr = obtenerTipoExpresion(valorReal);
+                        if(tipoExpr == "boolean"){
+                            System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'bool'. Línea %d, columna %d.\u001B[0m%n",
+                                lastLine, lastColumn);
+                            tieneErrores = true;
+                        }
                         if ("void".equals(tipoExpr)) {
                             System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'void'. Línea %d, columna %d.\u001B[0m%n",
                                 lastLine, lastColumn);
