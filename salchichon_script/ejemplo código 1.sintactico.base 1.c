@@ -6,9 +6,10 @@ let float f = 2.4 $
 
  float func1 є char x22,char x23 э  ¿ |semantico borrar parametro
  	
- 	let int arregloChar¿20?$
-	arregloChar = ¿1,2,3,4?$
-	let int numero$ let char letra$
+ 	let int arregloChar¿20? = ¿1,2,3,4?$
+	let int suma = 7 + arregloChar¿2?$
+	let int numero$
+	let char letra$
 	numero = 10$
 	letra = 'a'$
 	output є numero э $

@@ -977,18 +977,35 @@ asignacion_arreglo::=
         }
     :}
     ;
-elemento_arreglo ::= ID:nombreArreglo BLO_A expresion:tamano BLO_C 
+elemento_arreglo ::= ID:nombreArreglo BLO_A ENTERO:tamano BLO_C 
     {:
         NodoToken arregloToken = buscarID(nombreArreglo.toString());
-        if(arregloToken != null){
-            System.out.println(">>> [DEBUG] Acceso a elemento de arreglo: " + nombreArreglo + "[" + tamano + "]");
-            arregloToken.setValor(nombreArreglo.toString() + "[" + tamano.toString() + "]");
-        }else{
-            System.err.printf("\u001B[31mXXX Error semántico: Arreglo '%s' no declarado. Línea %d, columna %d.\u001B[0m%n",
-                nombreArreglo.toString(), lastLine, lastColumn);
+        if (arregloToken != null) {
+
+            System.out.println(">>> [DEBUG] Acceso a elemento de arreglo: " 
+                                + nombreArreglo + "[" + tamano + "]");
+
+            // Construimos el HashMap resultado
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("nombre", nombreArreglo.toString());
+            map.put("indice", tamano);
+
+            String nuevoTemporal = nuevaTempInt();
+            map.put("temporal", nuevoTemporal);
+            cod3D(nuevoTemporal + " = base_" + nombreArreglo + " + " + tamano);
+            cod3D("");
+
+            RESULT = map;
+
+        } else {
+            System.err.printf(
+                "\u001B[31mXXX Error semántico: Arreglo '%s' no declarado. Línea %d, columna %d.\u001B[0m%n",
+                nombreArreglo.toString(), lastLine, lastColumn
+            );
             tieneErrores = true;
+
+            RESULT = null;
         }
-        RESULT = nombreArreglo;
     :}
 ;
 
@@ -2220,14 +2237,30 @@ operando ::= ENTERO:a
         :}
 
     | elemento_arreglo:e {:
+        HashMap<String, Object> elem = (HashMap<String, Object>) e;
+
+        String nombre = (String) elem.get("nombre");
+        Object indice = elem.get("indice"); 
+        String temporal = (String) elem.get("temporal");
+
         HashMap<String,String> res = new HashMap<>();
         if (e != null) {
             String temp = nuevaTempInt();
-            res.put("temp", temp);
-            NodoToken elementoArreglo = buscarID(e.toString());
+            res.put("temp", temporal);
+            NodoToken elementoArreglo = buscarID(nombre);
             if(elementoArreglo.getTipo() == "arreglo_entero"){
-                cod3D(temp + " = " + " 1");
-                res.put("valor", "1");
+                String[] listaElementos = elementoArreglo.getValor().toString().replace("[", "").replace("]", "").split(",");
+                if(listaElementos.length > Integer.parseInt(indice.toString())){
+
+                    String valor = listaElementos[Integer.parseInt(indice.toString())].trim();
+                    res.put("valor", valor);
+                }else{
+                    System.err.printf("\u001B[31mXXX Error semántico: Índice %s fuera de rango para arreglo '%s'. Línea %d, columna %d.\u001B[0m%n",
+                        indice.toString(), nombre, lastLine, lastColumn);
+                    tieneErrores = true;
+                    res.put("temp", "error");
+                    res.put("valor", "error");
+                }
             }else{
                 res.put("valor", "error");
             }
