@@ -87,7 +87,7 @@ Comentario 1
 		let int _var_ = w - 1$ |semantico
 		let int _i_$
 		for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
-		exit when є f>12.2 @ є12> є 34+35 ээ  э $ |semantico
+		exit when є f>12.2 @ Σ є12 >  є 34+35 ээ  э $ |semantico
 	end loop$
 	return$ |semantico
  ? 
