@@ -54,9 +54,9 @@ let float f = 2.4 $
 	return false$ |generar error con -5.6 y con i1
   ?  
 
-string _func3_  є  э   ¿  |semantico string
+int _func3_  є  э   ¿  |semantico string
 	let string _b1_$
-	return _b1_$ 
+	return 2$ 
   ? |No permitir reetorno string ...fixed... Se valido semanticamente que si el tipo de la funcion es string se devuelv error 
 
 init void principal є  э  ¿ 
@@ -82,7 +82,7 @@ Comentario 1
 	let bool bl0 = 6.7 != 8.9$ |ok
 	bl0 = true != false$ |ok
 	let bool bl1 = in1 >= w ~ false @ є func1 є 'A', 'd'э  > 1.6 э $ |semantico in1 >= fl1, func2
-	output є true э $ |semantico
+	output є "true" э $ |semantico
 	loop
 		let int _var_2 = w - 1$ |semantico
 		let int _var_ = w - 1$ |semantico
