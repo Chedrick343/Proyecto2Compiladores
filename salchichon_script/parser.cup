@@ -1301,25 +1301,32 @@ leer ::= LEER PAR_A ID:var PAR_C
                 System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' no ha sido declarada antes de leer(). Línea %d, columna %d.\u001B[0m%n",
                     var.toString(), lastLine, lastColumn);
                 tieneErrores = true;
-            } 
+            }
             else {
+                String tipo = varTok.getTipo();
+                if(tipo == "char"){
+                    System.err.printf("\u001B[31mXXX Error semántico XXX : La variable '%s' es de tipo char y no se puede usar con leer(). Línea %d, columna %d.\u001B[0m%n",
+                        var.toString(), lastLine, lastColumn);
+                    tieneErrores = true;
+                }else{
 
-                String temp = nuevaTempInt();
-                cod3D(temp + " = call input(), 1");
-                cod3D(var + " = " + temp);
+                    String temp = nuevaTempInt();
+                    cod3D(temp + " = call input(), 1");
+                    cod3D(var + " = " + temp);
 
-                System.out.println(">>> [3AC] " + temp + " = call input(), 1");
-                System.out.println(">>> [3AC] " + var + " = " + temp);
+                    System.out.println(">>> [3AC] " + temp + " = call input(), 1");
+                    System.out.println(">>> [3AC] " + var + " = " + temp);
 
-                NodoToken leerNode = new NodoToken();
-                leerNode.setTipo("llamada_funcion_sistema");
-                leerNode.setId("leer");
-                leerNode.setValor("asigna_a:" + var.toString());
-                leerNode.setLinea(String.valueOf(lastLine));
-                leerNode.setColumna(String.valueOf(lastColumn));
-                listaTablasSimbolos.get(currentHash).add(leerNode);
+                    NodoToken leerNode = new NodoToken();
+                    leerNode.setTipo("llamada_funcion_sistema");
+                    leerNode.setId("leer");
+                    leerNode.setValor("asigna_a:" + var.toString());
+                    leerNode.setLinea(String.valueOf(lastLine));
+                    leerNode.setColumna(String.valueOf(lastColumn));
+                    listaTablasSimbolos.get(currentHash).add(leerNode);
 
-                System.out.println(">>> [DEBUG] Uso de input() asignando a " + var + " en " + currentHash);
+                    System.out.println(">>> [DEBUG] Uso de input() asignando a " + var + " en " + currentHash);
+                }
             }
 
             RESULT = null;
