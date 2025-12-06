@@ -108,11 +108,7 @@ parser code
     HashMap<String, ArrayList<NodoToken>> listaTablasSimbolos = new HashMap<>();
     String currentHash;
     String globalHash = "global1TS";
-    int contadorLoop = 0;
-    int contadorFor = 0;
-    int contadorDecide = 0;
-    int contadorCase = 0;
-    int contadorElse = 0;
+
 
     /**
     * Inicializa la tabla de símbolos global y registra funciones de sistema
@@ -245,7 +241,19 @@ public void inicarTS() {
     StringBuilder codigoIntermedio = new StringBuilder();
     int tempCont = 0;
     int floatTempCont = 0;
-    int labelCont = 0;
+        
+    StringBuilder target3D = codigoIntermedio;
+
+    String scopeAnteriorDecide;
+    String decideBaseLabel = null;
+    StringBuilder decideConds = null;
+    StringBuilder decideBlocks = null;
+
+    int contadorLoop = 0;
+    int contadorFor = 0;
+    int contadorDecide = 0;
+    int contadorCase = 0;
+    int contadorElse = 0;
 
     /**
     * Genera el nombre de un temporal entero único (t1, t2, ...).
@@ -268,7 +276,10 @@ public void inicarTS() {
     * @param codigo instrucción 3AC ya formateada.
     */
     void cod3D(String codigo) {
-        codigoIntermedio.append(codigo).append("\n");
+        if (target3D == null) {
+            target3D = codigoIntermedio;
+        }
+        target3D.append(codigo).append("\n");
         System.out.println(">>> [3AC] " + codigo);
     }
 
@@ -281,25 +292,50 @@ public void inicarTS() {
     */
     public String genOperacion3D(String op1, String operador, String op2) {
         String temp1, temp2, tempRes;
-        
-        // Si el operando izquierdo no es temporal, lo cargamos a uno nuevo
+        String tipo1, tipo2;
+
+        // ===== Operando izquierdo =====
         if (op1.startsWith("t") || op1.startsWith("f")) {
             temp1 = op1;
+            tipo1 = op1.startsWith("f") ? "float" : "int";
         } else {
-            temp1 = nuevaTempInt();
+            tipo1 = obtenerTipoExpresion(op1);        // literal o id
+            if ("float".equals(tipo1)) {
+                temp1 = nuevaTempFloat();
+            } else {
+                temp1 = nuevaTempInt();
+            }
             cod3D(temp1 + " = " + op1);
         }
 
-        // Si el operando derecho no es temporal, lo cargamos a otro
+        // ===== Operando derecho =====
         if (op2.startsWith("t") || op2.startsWith("f")) {
             temp2 = op2;
+            tipo2 = op2.startsWith("f") ? "float" : "int";
         } else {
-            temp2 = nuevaTempInt();
+            tipo2 = obtenerTipoExpresion(op2);
+            if ("float".equals(tipo2)) {
+                temp2 = nuevaTempFloat();
+            } else {
+                temp2 = nuevaTempInt();
+            }
             cod3D(temp2 + " = " + op2);
         }
 
-        // Crear resultado
-        tempRes = nuevaTempInt();
+        // ===== Tipo del resultado =====
+        String tipoRes;
+        if ("float".equals(tipo1) || "float".equals(tipo2)) {
+            tipoRes = "float";
+        } else {
+            tipoRes = "int";
+        }
+
+        if ("float".equals(tipoRes)) {
+            tempRes = nuevaTempFloat();
+        } else {
+            tempRes = nuevaTempInt();
+        }
+
         cod3D(tempRes + " = " + temp1 + " " + operador + " " + temp2);
         return tempRes;
     }
@@ -343,54 +379,55 @@ public void inicarTS() {
     public void validarAsignacionTipo(String tipoEsperado, String valorAsignado, int linea, int columna) {
         if (valorAsignado == null || tipoEsperado == null) return;
 
+        // 1) Inferir el tipo real de la expresión
+        String tipoExpr = obtenerTipoExpresion(valorAsignado);
+
+        // Si no se pudo inferir
+        if ("desconocido".equals(tipoExpr)) {
+            System.err.printf(
+                "\u001B[33m [ADVERTENCIA] No se pudo inferir el tipo de la expresión '%s' para validar contra '%s'. Línea %d, columna %d.\u001B[0m%n",
+                valorAsignado, tipoEsperado, linea, columna
+            );
+            return;
+        }
+
+        boolean ok = false;
+
         switch (tipoEsperado) {
             case "int":
-                try {
-                    Integer.parseInt(valorAsignado);
-                } catch (NumberFormatException e) {
-                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'int'. Línea %d, columna %d.\u001B[0m%n",
-                        valorAsignado, linea, columna);
-                    tieneErrores = true;
-                }
+                ok = "int".equals(tipoExpr);
                 break;
 
             case "float":
-                try {
-                    Float.parseFloat(valorAsignado);
-                } catch (NumberFormatException e) {
-                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'float'. Línea %d, columna %d.\u001B[0m%n",
-                        valorAsignado, linea, columna);
-                    tieneErrores = true;
-                }
+                ok = "float".equals(tipoExpr) || "int".equals(tipoExpr);
                 break;
 
             case "boolean":
-                if (!(valorAsignado.equals("true") || valorAsignado.equals("false"))) {
-                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'boolean'. Línea %d, columna %d.\u001B[0m%n",
-                        valorAsignado, linea, columna);
-                    tieneErrores = true;
-                }
+                ok = "boolean".equals(tipoExpr);
                 break;
 
             case "char":
-                if (valorAsignado.length() != 3 || valorAsignado.charAt(0) != '\'' || valorAsignado.charAt(2) != '\'') {
-                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'char'. Línea %d, columna %d.\u001B[0m%n",
-                        valorAsignado, linea, columna);
-                    tieneErrores = true;
-                }
+                ok = "char".equals(tipoExpr);
                 break;
 
             case "string":
-                if (!valorAsignado.startsWith("\"") || !valorAsignado.endsWith("\"")) {
-                    System.err.printf("\u001B[31m XXX Error semántico XXX : Valor '%s' no válido para tipo 'string'. Línea %d, columna %d.\u001B[0m%n",
-                        valorAsignado, linea, columna);
-                    tieneErrores = true;
-                }
+                ok = "string".equals(tipoExpr);
                 break;
 
             default:
-                System.err.printf("\u001B[33m [ADVERTENCIA] Tipo '%s' no reconocido para validación semántica.\u001B[0m%n", tipoEsperado);
-                break;
+                System.err.printf(
+                    "\u001B[33m [ADVERTENCIA] Tipo esperado '%s' no reconocido para validación. Expresión '%s' de tipo '%s'.\u001B[0m%n",
+                    tipoEsperado, valorAsignado, tipoExpr
+                );
+                return;
+        }
+
+        if (!ok) {
+            System.err.printf(
+                "\u001B[31m XXX Error semántico XXX : Valor '%s' (tipo '%s') no válido para tipo '%s'. Línea %d, columna %d.\u001B[0m%n",
+                valorAsignado, tipoExpr, tipoEsperado, linea, columna
+            );
+            tieneErrores = true;
         }
     }
 
@@ -788,6 +825,10 @@ elemento_global ::= sentencia
     ;
 
 main_funcion ::= declara_main_func PAR_A PAR_C bloque
+    {:
+        currentHash = globalHash;
+        cod3D("\nprincipal_end:\n\n");
+    :}
     | declara_main_func bloque
     | declara_main_func error
     ;
@@ -801,9 +842,8 @@ declara_main_func ::= INIT VOID:tipo MAIN:main
                             func.setColumna(String.valueOf(lastColumn));
                             listaTablasSimbolos.get(globalHash).add(func);
 
-                            currentHash = "TS_FUNC_" + main.toString();
+                            currentHash = main.toString();
                             listaTablasSimbolos.put(currentHash, new ArrayList<>());
-                            System.out.println(">>> [DEBUG] Función main creada: " + currentHash);
 
                             // CODIGO INTERMEDIO
                             cod3D("\n" + main + ":");
@@ -971,7 +1011,7 @@ sentencia ::= declaracion FIN_E
                         );
                         tieneErrores = true;
                     } else {
-                        cod3D("call return()");
+                        cod3D("call return(), 1");
                     }
                 } else {
                     if ("void".equals(tipoRetorno)) {
@@ -1037,13 +1077,19 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
                             tieneErrores = true;
                         } else {
                             java.util.List<String> definidos = funcToken.getParametros();
-                            java.util.List<String> llamados = new java.util.ArrayList<>();
 
-                            if (parametros != null && !parametros.toString().isEmpty()) {
-                                String[] enviados = parametros.toString().split(",");
-                                for (String p : enviados) {
-                                    p = p.trim();
-                                    if (!p.isEmpty()) llamados.add(p);
+                            java.util.List<HashMap<String,String>> listaParams;
+                            if (parametros instanceof java.util.List) {
+                                listaParams = (java.util.List<HashMap<String,String>>) parametros;
+                            } else {
+                                listaParams = new java.util.ArrayList<HashMap<String,String>>();
+                            }
+
+                            java.util.List<String> llamados = new java.util.ArrayList<String>();
+                            for (HashMap<String,String> pInfo : listaParams) {
+                                String v = pInfo.get("valor");
+                                if (v != null) {
+                                    llamados.add(v);
                                 }
                             }
 
@@ -1056,7 +1102,7 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
                                     String paramDef = definidos.get(i);
                                     NodoToken declParam = null;
 
-                                    String funcScope = "TS_FUNC_" + nombreFunc;
+                                    String funcScope = nombreFunc.toString();
                                     if (listaTablasSimbolos.containsKey(funcScope)) {
                                         for (NodoToken t : listaTablasSimbolos.get(funcScope)) {
                                             if (t.getId().equals(paramDef)) {
@@ -1068,7 +1114,7 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
 
                                     String paramLlamado = llamados.get(i);
                                     String tipoEnviado = obtenerTipoExpresion(paramLlamado);
-                                    String tipoEsperado = declParam != null ? declParam.getTipo() : "desconocido";
+                                    String tipoEsperado = (declParam != null) ? declParam.getTipo() : "desconocido";
 
                                     if (!sonTiposCompatibles(tipoEsperado, tipoEnviado)) {
                                         System.err.printf("\u001B[31mXXX Error semántico XXX : En parámetro #%d de función '%s', se esperaba tipo '%s' pero se envió '%s'. Línea %d, columna %d.\u001B[0m%n",
@@ -1077,49 +1123,46 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
                                     }
                                 }
 
-                                for (String param : llamados) {
-                                    String tipoParametro = obtenerTipoExpresion(param);
-                                    String temp = "";
-
-                                    if ("int".equals(tipoParametro)) {
-                                        temp = nuevaTempInt();
-                                    } else if ("float".equals(tipoParametro)) {
-                                        temp = nuevaTempFloat();
+                                for (HashMap<String,String> pInfo : listaParams) {
+                                    String tempValor = pInfo.get("temp");
+                                    if (tempValor == null || tempValor.equals("error")) {
+                                        System.err.printf("\u001B[31mXXX Error semántico XXX : Parámetro con temporal inválido en llamada a '%s'. Línea %d, columna %d.\u001B[0m%n",
+                                            nombreFunc.toString(), lastLine, lastColumn);
+                                        tieneErrores = true;
                                     } else {
-                                        temp = nuevaTempInt();
+                                        cod3D("param " + tempValor);
                                     }
-
-                                    cod3D(temp + " = " + param);
-                                    cod3D("param " + temp);
                                 }
 
                                 String funcTemp = nuevaTempInt();
                                 String tipoRetorno = funcToken.getTipo();
 
                                 if (!"void".equals(tipoRetorno)) {
-                                    cod3D(funcTemp + " = call " + nombreFunc + "()");
+                                    cod3D(funcTemp + " = call " + nombreFunc + "(), " + definidos.size());
                                     System.out.println(">>> [DEBUG] Llamada a la función con retorno: " + nombreFunc);
 
                                     NodoToken tempRet = new NodoToken();
-                                    tempRet.setId(funcTemp);                 // el nombre del temporal (tXX)
-                                    tempRet.setTipo(tipoRetorno);            // tipo de retorno
+                                    tempRet.setId(funcTemp);
+                                    tempRet.setTipo(tipoRetorno);
                                     tempRet.setValor("retorno_" + nombreFunc);
                                     tempRet.setLinea(String.valueOf(lastLine));
                                     tempRet.setColumna(String.valueOf(lastColumn));
-                                    
-                                    // Agregar los parámetros de la función original
-                                    tempRet.setParametros(new java.util.ArrayList<>(funcToken.getParametros()));
+
+                                    tempRet.setParametros(
+                                        new java.util.ArrayList<String>(funcToken.getParametros())
+                                    );
 
                                     listaTablasSimbolos.get(currentHash).add(tempRet);
 
                                     System.out.println(">>> [DEBUG] Temporal de retorno registrado: " + funcTemp + 
                                         " tipo=" + tipoRetorno + " params=" + funcToken.getParametros());
-                                } else {
-                                    cod3D("call " + nombreFunc + "()");
-                                    System.out.println(">>> [DEBUG] Llamada a la función sin retorno: " + nombreFunc);
-                                }
 
-                                RESULT = funcTemp;
+                                    RESULT = funcTemp;
+                                } else {
+                                    cod3D("call " + nombreFunc + "(), " + definidos.size());
+                                    System.out.println(">>> [DEBUG] Llamada a la función sin retorno: " + nombreFunc);
+                                    RESULT = null;
+                                }
                             }
                         }
                     :}
@@ -1127,36 +1170,60 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
 
 
 parametros_llamada ::= expresion:e
-                        {:
-                            String valorReal;
-                            String tempValor;
-                            if (e instanceof java.util.HashMap) {
-                                valorReal = ((HashMap)e).get("valor").toString();
-                                tempValor = ((HashMap)e).get("temp").toString();
-                            } else {
-                                valorReal = e.toString();
-                                tempValor = valorReal;
-                            }
-                            RESULT = valorReal;
-                        :}
-                    | expresion:e COMA parametros_llamada:pl
-                        {:
-                            String valorReal;
-                            String tempValor;
-                            if (e instanceof java.util.HashMap) {
-                                valorReal = ((HashMap)e).get("valor").toString();
-                                tempValor = ((HashMap)e).get("temp").toString(); 
-                            } else {
-                                valorReal = e.toString();
-                                tempValor = valorReal;
-                            }
-                            RESULT = valorReal + "," + pl.toString();
-                        :}
-                    | /* vacío */
-                        {:
-                            RESULT = "";
-                        :}
-                    ;
+                {:
+                    java.util.List<HashMap<String,String>> lista = new java.util.ArrayList<>();
+
+                    String valorReal;
+                    String tempValor;
+
+                    if (e instanceof java.util.HashMap) {
+                        valorReal = ((HashMap)e).get("valor").toString();
+                        tempValor = ((HashMap)e).get("temp").toString();
+                    } else {
+                        valorReal = e.toString();
+                        tempValor = valorReal;
+                    }
+
+                    HashMap<String,String> paramInfo = new HashMap<>();
+                    paramInfo.put("valor", valorReal);
+                    paramInfo.put("temp",  tempValor);
+
+                    lista.add(paramInfo);
+                    RESULT = lista;
+                :}
+            | expresion:e COMA parametros_llamada:pl
+                {:
+                    java.util.List<HashMap<String,String>> lista;
+
+                    if (pl instanceof java.util.List) {
+                        lista = (java.util.List<HashMap<String,String>>) pl;
+                    } else {
+                        lista = new java.util.ArrayList<>();
+                    }
+
+                    String valorReal;
+                    String tempValor;
+
+                    if (e instanceof java.util.HashMap) {
+                        valorReal = ((HashMap)e).get("valor").toString();
+                        tempValor = ((HashMap)e).get("temp").toString();
+                    } else {
+                        valorReal = e.toString();
+                        tempValor = valorReal;
+                    }
+
+                    HashMap<String,String> paramInfo = new HashMap<>();
+                    paramInfo.put("valor", valorReal);
+                    paramInfo.put("temp",  tempValor);
+
+                    lista.add(0, paramInfo);
+                    RESULT = lista;
+                :}
+            | /* vacío */
+                {:
+                    RESULT = new java.util.ArrayList<HashMap<String,String>>();
+                :}
+            ;
 
 
 imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
@@ -1182,9 +1249,9 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                             if (valorReal != "error") {
 
                                 cod3D("param " + tempValor);
-                                cod3D("call output()");
+                                cod3D("call output(), 1");
                                 System.out.println(">>> [3AC] param " + tempValor);
-                                System.out.println(">>> [3AC] call output()");
+                                System.out.println(">>> [3AC] call output(), 1");
 
                                 NodoToken imp = new NodoToken();
                                 imp.setTipo("llamada_funcion_sistema");
@@ -1221,10 +1288,10 @@ leer ::= LEER PAR_A ID:var PAR_C
             else {
 
                 String temp = nuevaTempInt();
-                cod3D(temp + " = call input()");
+                cod3D(temp + " = call input(), 1");
                 cod3D(var + " = " + temp);
 
-                System.out.println(">>> [3AC] " + temp + " = call input()");
+                System.out.println(">>> [3AC] " + temp + " = call input(), 1");
                 System.out.println(">>> [3AC] " + var + " = " + temp);
 
                 NodoToken leerNode = new NodoToken();
@@ -1252,7 +1319,7 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                     System.out.println(">>> [DEBUG] Procesando función: " + nombreFun);
                     System.out.println(">>> [DEBUG] Tabla de símbolos actual: " + currentHash);
                     System.out.println(">>> [DEBUG] Parámetros recibidos: " + params);
-                    cod3D(nombreFun + ":");
+                    cod3D("\n" + nombreFun + ":");
                     if (params != null && !params.toString().isEmpty()) {
                         String[] lista = params.toString().split(",");
                         for (String p : lista) {
@@ -1284,7 +1351,7 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                 {:
                     currentHash = globalHash;
                     System.out.println(">> [TS] Regresando a tabla global.");
-                    cod3D(nombreFun + "_end:\n\n");
+                    cod3D("\n" + nombreFun + "_end:");
                 :}
         | declara_func PAR_A parametros_opt PAR_C error
         | declara_func PAR_A error PAR_C bloque
@@ -1315,7 +1382,7 @@ declara_func ::= tipo_funcion:tipoFun ID:nombreFun
                     func.setColumna(String.valueOf(lastColumn));
                     listaTablasSimbolos.get(globalHash).add(func);
 
-                    currentHash = "TS_FUNC_" + nombreFun.toString();
+                    currentHash = nombreFun.toString();
                     if (!listaTablasSimbolos.containsKey(currentHash))
                         listaTablasSimbolos.put(currentHash, new ArrayList<>());
                     System.out.println(">>> [DEBUG] Función creada: " + currentHash);
@@ -1364,17 +1431,61 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                                 nombreDeclaracion.toString(), lastLine, lastColumn);
                             tieneErrores = true;
                         } else {
-                            // Declaración SIN asignación
                             NodoToken declaracion = new NodoToken();
                             declaracion.setTipo(tipoDato);
                             declaracion.setId(nombreDeclaracion.toString());
-                            declaracion.setValor(null); // Valor vacío por defecto
                             declaracion.setLinea(String.valueOf(lastLine));
                             declaracion.setColumna(String.valueOf(lastColumn));
+
+                            // ====== RESERVA DE MEMORIA EN COD3D ======
+                            String tempDefault = null;
+
+                            switch (tipoDato) {
+                                case "int":
+                                    tempDefault = nuevaTempInt();
+                                    cod3D(tempDefault + " = 0");
+                                    cod3D(nombreDeclaracion + " = " + tempDefault);
+                                    declaracion.setValor("0");
+                                    break;
+
+                                case "float":
+                                    tempDefault = nuevaTempFloat();
+                                    cod3D(tempDefault + " = 0.0");
+                                    cod3D(nombreDeclaracion + " = " + tempDefault);
+                                    declaracion.setValor("0.0");
+                                    break;
+
+                                case "boolean":
+                                    tempDefault = nuevaTempInt();
+                                    cod3D(tempDefault + " = false");        // false
+                                    cod3D(nombreDeclaracion + " = " + tempDefault);
+                                    declaracion.setValor("false");
+                                    break;
+
+                                case "char":
+                                    tempDefault = nuevaTempInt();
+                                    cod3D(tempDefault + " = '\\0'");    // char nulo
+                                    cod3D(nombreDeclaracion + " = " + tempDefault);
+                                    declaracion.setValor("'\\0'");
+                                    break;
+
+                                case "string":
+                                    tempDefault = nuevaTempInt();
+                                    cod3D(tempDefault + " = \"\"");     // string vacío
+                                    cod3D(nombreDeclaracion + " = " + tempDefault);
+                                    declaracion.setValor("\"\"");
+                                    break;
+
+                                default:
+                                    declaracion.setValor(null);
+                                    break;
+                            }
+
                             listaTablasSimbolos.get(currentHash).add(declaracion);
-                            System.out.println(">>> [DEBUG] Variable declarada SIN valor: " + nombreDeclaracion.toString() + " en " + currentHash);
+                            System.out.println(">>> [DEBUG] Variable declarada SIN valor explícito (reservada): " 
+                                + nombreDeclaracion.toString() + " de tipo " + tipoDato + " en " + currentHash);
                         }
-                    :} 
+                    :}
                 | LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
                     {:
                         if (esIdExistente(currentHash, nombreDeclaracion.toString())) {
@@ -1398,7 +1509,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                                     tempValor = valorReal;
                                 }
 
-                                // validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
+                                validarAsignacionTipo(tipoDato, valorReal, lastLine, lastColumn);
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     declaracion.setValor(valorReal);
 
@@ -1577,7 +1688,8 @@ asignacion ::= ID:nombre ASIGN expresion:valor
                                     tempValor = valorReal;
                                 }
 
-                                // validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+                                validarAsignacionTipo(variable.getTipo(), valorReal, lastLine, lastColumn);
+
                                 if (!(valorReal == "error" || tempValor == "error")) {
                                     cod3D(nombre + " = " + tempValor);
                                     variable.setValor(valorReal);
@@ -1992,7 +2104,7 @@ factor ::= potencia:e1 POT potencia:e2
                 :}
         | potencia:p {: RESULT = p; :}
         ;
-}
+
 
 
 // POTENCIAS
@@ -2023,7 +2135,7 @@ operando ::= ENTERO:a
         {:
             HashMap<String,String> res = new HashMap<>();
             String temp = nuevaTempInt();
-            cod3D(temp + " = 1");
+            cod3D(temp + " = true");
             res.put("temp", temp);
             res.put("valor", "true");
             RESULT = res;
@@ -2032,7 +2144,7 @@ operando ::= ENTERO:a
         {:
             HashMap<String,String> res = new HashMap<>();
             String temp = nuevaTempInt();
-            cod3D(temp + " = 0");
+            cod3D(temp + " = false");
             res.put("temp", temp);
             res.put("valor", "false");
             RESULT = res;
@@ -2055,10 +2167,11 @@ operando ::= ENTERO:a
             res.put("valor", s.toString());
             RESULT = res;
         :}
-    | ID:id 
+| ID:id 
         {:
             HashMap<String,String> res = new HashMap<>();
             NodoToken var = buscarID(id.toString());
+
             if (var == null) {
                 System.err.printf(
                     "\u001B[31mXXX Error semántico: variable '%s' no declarada. Línea %d, columna %d.\u001B[0m%n",
@@ -2068,13 +2181,23 @@ operando ::= ENTERO:a
                 res.put("temp","error");
                 res.put("valor","error");
             } else {
-                String temp = nuevaTempInt();
+                String tipoVar = var.getTipo();
+                String temp;
+
+                if ("float".equals(tipoVar)) {
+                    temp = nuevaTempFloat();
+                } else {
+                    temp = nuevaTempInt();
+                }
+
                 cod3D(temp + " = " + id);
                 res.put("temp", temp);
                 res.put("valor", id.toString());
             }
+
             RESULT = res;
         :}
+
     | elemento_arreglo:e {:
         HashMap<String,String> res = new HashMap<>();
         if (e != null) {
@@ -2168,24 +2291,40 @@ op_rel ::= MAYOR    {: RESULT = ">";  :}
 condicional ::=
     DECIDE OF
         {:
-            // AQUI SE CREA EL SCOPE PARA EL BLOQUE DECIDE
             contadorDecide++;
-            String decideScope = currentHash + "_DECIDE_" + contadorDecide;
-            crearSubAmbito(decideScope);
-            System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideScope);
-            
-            // Guardar el scope anterior
-            String anteriorScope = currentHash;
-            currentHash = decideScope;
+            contadorCase = 0;
+            contadorElse = 0;
 
-            RESULT = anteriorScope;
+            scopeAnteriorDecide = currentHash;
+
+            decideBaseLabel = currentHash + "_decide" + contadorDecide;
+
+            crearSubAmbito(decideBaseLabel);
+            currentHash = decideBaseLabel;
+            System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideBaseLabel);
+
+            decideConds  = new StringBuilder();
+            decideBlocks = new StringBuilder();
+
+            target3D = decideConds;
+
+            cod3D("\n" + decideBaseLabel + ":");
         :}
     lista_casos
     cond_else_opt
     END DECIDE
         {:
-            // recuperar el scope en el que estaba antes
-            currentHash = (String) RESULT;
+            target3D = codigoIntermedio;
+            codigoIntermedio.append(decideConds);
+            codigoIntermedio.append(decideBlocks);
+
+            cod3D(decideBaseLabel + "_end:");
+
+            currentHash    = scopeAnteriorDecide;
+            decideConds    = null;
+            decideBlocks   = null;
+            decideBaseLabel = null;
+
             System.out.println(">>> [DEBUG] Fin ámbito DECIDE, regresando a: " + currentHash);
         :}
     ;
@@ -2195,43 +2334,70 @@ lista_casos ::= caso
               ;
 
 caso ::=
-    PAR_A expresion PAR_C FLECHA
+    PAR_A expresion:e PAR_C FLECHA
         {:
-            // SCOPE POR CADA CASO
             contadorCase++;
-            String caseScope = currentHash + "_CASE_" + contadorCase;
-            crearSubAmbito(caseScope);
-            System.out.println(">>> [DEBUG] Inicia ámbito CASE: " + caseScope);
 
-            String anteriorScope = currentHash;
-            currentHash = caseScope;
-            RESULT = anteriorScope;
+            String labelCaso = decideBaseLabel + "_caso" + contadorCase;
+
+            String tempCond = ((HashMap)e).get("temp").toString();
+
+            cod3D("if " + tempCond + " goto " + labelCaso);
+        
+                    currentHash = decideBaseLabel;
+            String caseScopeTS = decideBaseLabel + "_TS_caso" + contadorCase;
+            crearSubAmbito(caseScopeTS);
+
+            String scopeAnterior = currentHash;
+            currentHash = caseScopeTS;
+
+            target3D = decideBlocks;
+
+            cod3D("\n" + labelCaso + ":");
+
+                        RESULT = scopeAnterior;
+
         :}
     bloque
         {:
-            currentHash = (String) RESULT;
-            System.out.println(">>> [DEBUG] Fin ámbito CASE, regresando a: " + currentHash);
+            cod3D("goto " + decideBaseLabel + "_end");
+
+            target3D = decideConds;
         :}
     | PAR_A error PAR_C FLECHA bloque
     ;
 
 cond_else_opt ::=
       /* vacío */
+        {:
+            cod3D("goto " + decideBaseLabel + "_end");
+        :}
     | ELSE FLECHA
         {:
-            contadorElse++;
-            String elseScope = currentHash + "_ELSE_" + contadorElse;
-            crearSubAmbito(elseScope);
-            System.out.println(">>> [DEBUG] Inicia ámbito ELSE: " + elseScope);
+            String labelElse = decideBaseLabel + "_else";
 
-            String anteriorScope = currentHash;
-            currentHash = elseScope;
-            RESULT = anteriorScope;
+            cod3D("goto " + labelElse);
+
+            currentHash = decideBaseLabel;
+            String elseScopeTS = decideBaseLabel + "_TS_else";
+            crearSubAmbito(elseScopeTS);
+
+            String scopeAnterior = currentHash;
+            currentHash = elseScopeTS;
+
+            target3D = decideBlocks;
+            cod3D("\n" + labelElse + ":");
+
+                        RESULT = scopeAnterior;
+
         :}
-    bloque
+      bloque
         {:
+            cod3D("goto " + decideBaseLabel + "_end");
+
             currentHash = (String) RESULT;
-            System.out.println(">>> [DEBUG] Fin ámbito ELSE, regresando a: " + currentHash);
+
+            target3D = decideConds;
         :}
     ;
 
@@ -2240,9 +2406,9 @@ bucle_loop ::=
     {:
         // Crear scope de tabla de símbolos 
         contadorLoop++;
-        String loopScope = currentHash + "_LOOP_" + contadorLoop;
+        String loopScope = currentHash + "_loop" + contadorLoop;
         crearSubAmbito(loopScope);
-        cod3D("\n" + currentHash + "_loop_" + contadorLoop + ":");
+        cod3D("\n" + currentHash + "_loop" + contadorLoop + ":");
 
 
         System.out.println(">>> [DEBUG] Inicia ámbito LOOP: " + loopScope);
@@ -2258,13 +2424,13 @@ bucle_loop ::=
     EXIT WHEN expresion:e1 FIN_E
     {: 
         // Codigo intermedio NO HAY VALIDACION SEMANTICA
-        cod3D("if " + e1 + " goto " + currentHash + "_endloop_" + contadorLoop);
+        cod3D("if " + ((HashMap)e1).get("temp").toString() + " goto " + currentHash + "_endloop");
     :}
     END LOOP FIN_E
     {:
         // Codigo intermedio
-        cod3D("goto " + currentHash + "_loop_" + contadorLoop);
-        cod3D(currentHash + "_endloop_" + contadorLoop + ":");
+        cod3D("goto " + currentHash);
+        cod3D(currentHash + "_endloop:");
 
         // Restaurar el scope previo
         currentHash = (String) RESULT;
@@ -2280,13 +2446,13 @@ bucle_for ::=
     {:
 
         contadorFor++;
-        String forScope = currentHash + "_FOR_" + contadorFor;
-        cod3D(forScope + ":");
+        String forScope = currentHash + "_for" + contadorFor;
+        cod3D("\n" + forScope + ":");
         String temporalContador = nuevaTempInt();
         String temporalLimite = nuevaTempInt();
         String temporalValidacion = nuevaTempInt();
         cod3D(temporalContador + " = " + e);
-        cod3D(temporalLimite + " = " + limite);
+        cod3D(temporalLimite + " = " + ((HashMap)limite).get("temp").toString());
         int numeroStep = Integer.parseInt(valor.toString());
         if(numeroStep > 0){
             if (dir.equals("downto")) {
@@ -2300,7 +2466,7 @@ bucle_for ::=
         }    
         
         crearSubAmbito(forScope);
-        cod3D("if " + temporalValidacion + " goto " + forScope + "_endfor_" + contadorFor);
+        cod3D("if " + temporalValidacion + " goto " + forScope + "_endfor");
         if (dir.equals("downto")) {
             cod3D(e + " = " + temporalContador + " - " + valor);
         } else {
@@ -2315,9 +2481,9 @@ bucle_for ::=
     :}
         DO bloque
     {:
-        String forFinal = currentHash + "_endfor_" + contadorFor;
+        String forFinal = currentHash + "_endfor";
         cod3D("goto " +currentHash);
-        cod3D(forFinal+ ":");
+        cod3D("\n" +forFinal+ ":");
         // Recupera el scope anterior
         currentHash = (String) RESULT;
         System.out.println(">>> [DEBUG] Fin ámbito FOR, regresando a: " + currentHash);
