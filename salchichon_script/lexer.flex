@@ -116,7 +116,6 @@ MAIN        =   "principal"
 
 // Regex
 ENTERO          =   (0)|(-?[1-9][0-9]*)
-ENTEROPO        =   (0)|([1-9][0-9]*)
 DECIMALES       =   [0-9]*[1-9]+
 FLOTANTE        =   (0\.0)|(-?(([1-9][0-9]*)\.({DECIMALES}|0))|(0\.{DECIMALES}))
 CHAR            =   \'[^'\n]\'
@@ -199,10 +198,6 @@ COMENTARIO = {COM_S}|{COM_C}
 <YYINITIAL> {ENTERO}        { 
 
     return symbol(sym.ENTERO, yytext()); 
-}
-<YYINITIAL> {ENTEROPO}        { 
-
-    return symbol(sym.ENTEROPO, yytext()); 
 }
 
 <YYINITIAL> {FLOTANTE}      { 

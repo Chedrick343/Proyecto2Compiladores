@@ -772,10 +772,10 @@ non terminal bloque, lista_sentencias, lista_sentencias_opt, sentencia, expr_opc
 non terminal funcion, parametros_opt, lista_parametros, parametro;
 non terminal asignacion;
 non terminal expresion, expresion_rel;
-non terminal expresion_arit, termino, factor, potencia, operando, elem_arr;
+non terminal expresion_arit, termino, factor, potencia, operando;
 non terminal op_rel, incrementar, decrementar;
 non terminal condicional, lista_casos, caso, cond_else_opt, bucle_loop, bucle_for, step, direccion;
-non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo, elemento_arreglo, asignacion_elemento; 
+non terminal lista_elementos_arreglo_entero, lista_char, arreglo_char, declaracion_arreglo_entero, declaracion_arreglo_char, asignacion_arreglo, elemento_arreglo; 
 non terminal declara_func, declara_main_func;
 
 // PRECEDENCIA
