@@ -1320,6 +1320,7 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                     System.out.println(">>> [DEBUG] Tabla de símbolos actual: " + currentHash);
                     System.out.println(">>> [DEBUG] Parámetros recibidos: " + params);
                     cod3D("\n" + nombreFun + ":");
+                    int count = 0;
                     if (params != null && !params.toString().isEmpty()) {
                         String[] lista = params.toString().split(",");
                         for (String p : lista) {
@@ -1339,7 +1340,8 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
 
                                 // código intermedio
                                 String temp = nuevaTempInt();
-                                cod3D(temp + " = " + p);
+                                cod3D(p + " = " + "param[" + count + "]");
+                                count++;
 
                                 System.out.println(">>> [DEBUG] Parámetro agregado a " + nombreFun + ": " + p);
                             }
