@@ -2,20 +2,21 @@
 let string _s1_$
 let bool _b1_$
 
+_s1_ = "Hola mundo"$
+
+let int x = 2 // 2$
+
 init void principal є  э  ¿ 
 
 	let int _i_ = 10$
 	output є _i_ э $
 
-	let float super$
+	let string _str_ = "Compiladores 2024"$
+	output є _str_ э $
 
+	let float super$
 	input є super э $
 	output є super э $
-	super = super + 0.5$
-	output є super э $
-	super = super / 2.0$
-	output є super э $
-	super = super * 3.0$
-	output є super э $
+
 	return$
  ? 
