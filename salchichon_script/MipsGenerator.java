@@ -98,8 +98,10 @@ public class MipsGenerator {
             if (right.matches("[A-Za-z_][A-Za-z0-9_]*")) {
                 String declR = dataDecls.get(right);
                 if (declR != null && declR.contains(".asciiz")) {
-                    String afterColon = declR.substring(declR.indexOf(':') + 1).trim();
-                    dataDecls.put(left, left + ": " + afterColon);
+                    // SIEMPRE: x es un puntero
+                    if (!dataDecls.containsKey(left)) {
+                        dataDecls.put(left, left + ": .word 0");
+                    }
                     continue;
                 }
             }
