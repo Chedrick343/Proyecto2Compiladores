@@ -187,12 +187,10 @@ public void inicarTS() {
     * @return el {NodoToken} si existe; de lo contrario {null}.
     */
     public NodoToken buscarID(String id){
-        System.out.println(">>> [DEBUG] Buscando ID: '" + id + "' en ámbito: " + currentHash);
         
         if(listaTablasSimbolos.containsKey(currentHash)){
             for(NodoToken tok : listaTablasSimbolos.get(currentHash)){
                 if(tok.getId().equals(id)) {
-                    System.out.println(">>> [DEBUG] Encontrado en ámbito actual: " + tok.getId() + " = " + tok.getValor());
                     return tok;
                 }
             }
@@ -200,12 +198,10 @@ public void inicarTS() {
         
         for(NodoToken tok : listaTablasSimbolos.get(globalHash)){
             if(tok.getId().equals(id)) {
-                System.out.println(">>> [DEBUG] Encontrado en ámbito global: " + tok.getId() + " = " + tok.getValor());
                 return tok;
             }
         }
         
-        System.out.println(">>> [DEBUG] NO encontrado: " + id);
         return null;
     }
 
@@ -234,7 +230,6 @@ public void inicarTS() {
         // Registrar el nuevo scope con los simbolos heredados
         listaTablasSimbolos.put(nombreScope, nuevo);
 
-        System.out.println(">>> [DEBUG] Nuevo ámbito creado: " + nombreScope + " heredando de " + currentHash);
     }
 
 
@@ -798,7 +793,6 @@ program ::= {:
             :}
                 lista_global main_funcion lista_global
             {:
-                System.out.println(">>> [DEBUG] Fin de análisis semántico.");
                 imprimirTablasSimbolos();
                 // Guardar codigo 3d a archivo
                 try {
@@ -940,10 +934,10 @@ asignacion_arreglo::=
                         cod3D("heap["+nuevoTemporal+"] = " + valor);
                         cod3D(nuevoTemporal +" = "+ nuevoTemporal + " + 1");
                     }
-                    System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
+
                 } else {
                     elementosStr.append("]");
-                    System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
+
                 }
                 
                 elementosStr.append("]");
@@ -988,8 +982,7 @@ elemento_arreglo ::= ID:nombreArreglo BLO_A ENTERO:tamano BLO_C
         NodoToken arregloToken = buscarID(nombreArreglo.toString());
         if (arregloToken != null) {
 
-            System.out.println(">>> [DEBUG] Acceso a elemento de arreglo: " 
-                                + nombreArreglo + "[" + tamano + "]");
+
 
             // Construimos el HashMap resultado
             HashMap<String, Object> map = new HashMap<>();
@@ -1095,8 +1088,7 @@ expr_opc ::=
 
 llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
                     {:
-                        System.out.println(">>> [DEBUG] Llamada a función: " + nombreFunc + 
-                            " con parámetros: " + (parametros != null ? parametros.toString() : "ninguno"));
+
 
                         NodoToken funcToken = buscarID(nombreFunc.toString());
                         if (funcToken == null) {
@@ -1167,7 +1159,7 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
 
                                 if (!"void".equals(tipoRetorno)) {
                                     cod3D(funcTemp + " = call " + nombreFunc + "(), " + definidos.size());
-                                    System.out.println(">>> [DEBUG] Llamada a la función con retorno: " + nombreFunc);
+                                    
 
                                     NodoToken tempRet = new NodoToken();
                                     tempRet.setId(funcTemp);
@@ -1182,13 +1174,12 @@ llamada_funcion ::= ID:nombreFunc PAR_A parametros_llamada:parametros PAR_C
 
                                     listaTablasSimbolos.get(currentHash).add(tempRet);
 
-                                    System.out.println(">>> [DEBUG] Temporal de retorno registrado: " + funcTemp + 
-                                        " tipo=" + tipoRetorno + " params=" + funcToken.getParametros());
+
 
                                     RESULT = funcTemp;
                                 } else {
                                     cod3D("call " + nombreFunc + "(), " + definidos.size());
-                                    System.out.println(">>> [DEBUG] Llamada a la función sin retorno: " + nombreFunc);
+
                                     RESULT = null;
                                 }
                             }
@@ -1294,8 +1285,7 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                                 imp.setColumna(String.valueOf(lastColumn));
                                 listaTablasSimbolos.get(currentHash).add(imp);
 
-                                System.out.println(">>> [DEBUG] Uso de output() en " + currentHash +
-                                    " con valor: " + valorReal + " (temp: " + tempValor + ")");
+
                             }
                         }
                     } else {
@@ -1341,7 +1331,7 @@ leer ::= LEER PAR_A ID:var PAR_C
                     leerNode.setColumna(String.valueOf(lastColumn));
                     listaTablasSimbolos.get(currentHash).add(leerNode);
 
-                    System.out.println(">>> [DEBUG] Uso de input() asignando a " + var + " en " + currentHash);
+
                 }
             }
 
@@ -1356,9 +1346,7 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                 {:
 
                     NodoToken func = buscarID(nombreFun.toString());
-                    System.out.println(">>> [DEBUG] Procesando función: " + nombreFun);
-                    System.out.println(">>> [DEBUG] Tabla de símbolos actual: " + currentHash);
-                    System.out.println(">>> [DEBUG] Parámetros recibidos: " + params);
+
                     cod3D("\n" + nombreFun + ":");
                     int count = 0;
                     if (params != null && !params.toString().isEmpty()) {
@@ -1383,11 +1371,11 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
                                 cod3D(p + " = " + "param[" + count + "]");
                                 count++;
 
-                                System.out.println(">>> [DEBUG] Parámetro agregado a " + nombreFun + ": " + p);
+
                             }
                         }
                     }
-                    System.out.println(">>> [DEBUG] Parámetros de la función " + nombreFun + ": " + func.getParametros());
+
                 :}
         bloque
                 {:
@@ -1402,12 +1390,12 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
 lista_parametros ::= parametro:p
                         {:
                             RESULT = p;
-                            System.out.println(">>> [DEBUG] Parámetro único: " + p);
+
                         :}
                     | parametro:p COMA lista_parametros:l
                         {:
                             RESULT = p + "," + l;
-                            System.out.println(">>> [DEBUG] Agregando parámetro: " + p + " => lista: " + RESULT);
+
                         :}
                     | /* vacío */
                         {:
@@ -1427,7 +1415,7 @@ declara_func ::= tipo_funcion:tipoFun ID:nombreFun
                     currentHash = nombreFun.toString();
                     if (!listaTablasSimbolos.containsKey(currentHash))
                         listaTablasSimbolos.put(currentHash, new ArrayList<>());
-                    System.out.println(">>> [DEBUG] Función creada: " + currentHash);
+
                     RESULT = nombreFun.toString();
                 :}
             ;
@@ -1456,7 +1444,7 @@ parametro ::= tipo:ti ID:nombreParam
                             temp = nuevaTempInt(); 
                         }
                         RESULT = nombreParam.toString();
-                        System.out.println(">>> [DEBUG] Parámetro agregado: " + nombreParam.toString() + " en " + currentHash);
+
                     }
                 :}
             ;
@@ -1524,8 +1512,7 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
                             }
 
                             listaTablasSimbolos.get(currentHash).add(declaracion);
-                            System.out.println(">>> [DEBUG] Variable declarada SIN valor explícito (reservada): " 
-                                + nombreDeclaracion.toString() + " de tipo " + tipoDato + " en " + currentHash);
+
                         }
                     :}
                 | LET tipo:tipoDato ID:nombreDeclaracion ASIGN expresion:valorExpr
@@ -1557,13 +1544,11 @@ declaracion ::= LET tipo:tipoDato ID:nombreDeclaracion
 
                                     cod3D(nombreDeclaracion + " = " + tempValor);
 
-                                    System.out.println(">>> [DEBUG] Variable declarada CON valor: " 
-                                        + nombreDeclaracion.toString() + " = " + valorReal + " en " + currentHash);
+
                                 }
                             } else {
                                 declaracion.setValor(null);
-                                System.out.println(">>> [DEBUG] Variable declarada CON valor NULL: " 
-                                    + nombreDeclaracion.toString() + " en " + currentHash);
+
                             }
 
                             declaracion.setLinea(String.valueOf(lastLine));
@@ -1598,10 +1583,10 @@ declaracion_arreglo_entero ::= LET tipo:tip ID:nombreArreglo BLO_A expresion:tam
                                                 cod3D("heap[HP] = " + elementosLista.get(i).toString());
                                                 cod3D("HP = HP + 1");
                                             }
-                                            System.out.println(">>> [DEBUG] Arreglo con " + elementosLista.size() + " elementos: " + elementosStr.toString());
+                                            
                                         } else {
                                             elementosStr.append("]");
-                                            System.out.println(">>> [DEBUG] Arreglo sin elementos válidos");
+
                                         }
                                         
                                         elementosStr.append("]");
@@ -1610,14 +1595,14 @@ declaracion_arreglo_entero ::= LET tipo:tip ID:nombreArreglo BLO_A expresion:tam
                                         declaracion.setLinea(String.valueOf(lastLine));
                                         declaracion.setColumna(String.valueOf(lastColumn));
                                         listaTablasSimbolos.get(currentHash).add(declaracion);
-                                        System.out.println(">>> [DEBUG] Arreglo de enteros declarado CON valor: " + nombreArreglo.toString() + " = " + elementosStr.toString() + " en " + currentHash);
+                    
                                     }
                                 :}
                                 | LET tipo:tipo ID:nombreArreglo BLO_A expresion:tam BLO_C {:
                                     
                                     if(buscarID(nombreArreglo.toString()) == null){
                                         if (tipo == "char") {
-                                            System.out.println(">>> [DEBUG] Declaración de arreglo de CHARES SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
+                                            
                                             NodoToken declaracion = new NodoToken();
                                             String baseTemp = "base_" + nombreArreglo;
                                             cod3D(baseTemp + " = HP");
@@ -1633,7 +1618,7 @@ declaracion_arreglo_entero ::= LET tipo:tip ID:nombreArreglo BLO_A expresion:tam
                                             listaTablasSimbolos.get(currentHash).add(declaracion);
                                             
                                         }else if(tipo == "int"){
-                                            System.out.println(">>> [DEBUG] Declaración de arreglo de enteros SIN asignación: " + nombreArreglo.toString() + " en " + currentHash);
+
                                             NodoToken declaracion = new NodoToken();
                                             String baseTemp = "base_" + nombreArreglo;
                                             cod3D(baseTemp + " = HP");
@@ -1681,17 +1666,16 @@ declaracion_arreglo_char ::= LET tipo:tip ID:nombreArregloChar BLO_A expresion B
                                                 cod3D("HP = HP + 1");
                                             }//'
                                             declaracion.setValor(valorStr);
-                                            System.out.println(">>> [DEBUG] Arreglo de chars declarado CON valor: " + nombreArregloChar.toString() + " = " + valorStr + " en " + currentHash);
+                                            
                                         } else {
                                             declaracion.setValor("arreglo_char");
-                                            System.out.println(">>> [DEBUG] Arreglo de chars declarado SIN valor específico: " + nombreArregloChar.toString() + " en " + currentHash);
+
                                         }
                                         declaracion.setLinea(String.valueOf(lastLine));
                                         declaracion.setColumna(String.valueOf(lastColumn));
                                         listaTablasSimbolos.get(currentHash).add(declaracion);
                                     }else{
-                                        System.err.printf("\u001B[31mXXX Error semántico: Variable '%s' ya declarada en ámbito actual o tipo incorrecto. Línea %d, columna %d.\u001B[0m%n",
-                                            nombreArregloChar.toString(), lastLine, lastColumn);
+
                                         tieneErrores = true;
                                     }
                                 :}
@@ -1736,7 +1720,7 @@ asignacion ::= ID:nombre ASIGN expresion:valor
                                     cod3D(nombre + " = " + tempValor);
                                     variable.setValor(valorReal);
 
-                                    System.out.println(">>> [DEBUG] Asignación: " + nombre + " = " + valorReal);
+                                    
                                 }
                             } else {
                                 variable.setValor(null);
@@ -1855,7 +1839,7 @@ expresion_rel ::=
     | expresion_arit:e1 op_rel:op expresion_arit:e2
         {:
             HashMap<String, String> res = new HashMap<>();
-            System.out.println(">>> [DEBUG] Evaluando expresión relacional con operadores: " + op.toString());
+
             if (e1 != null && e2 != null) {
                 String val1 = ((HashMap)e1).get("valor").toString();
                 String val2 = ((HashMap)e2).get("valor").toString();
@@ -2292,7 +2276,7 @@ operando ::= ENTERO:a
             res.put("temp","error");
             res.put("valor","error");
         }
-        System.out.println(">>> [DEBUG] Acceso a elemento de arreglo, temp: " + res.get("temp") + ", id: " + res.get("id"));
+
         RESULT = res;
     :}
     | MENOS operando:op 
@@ -2378,7 +2362,7 @@ condicional ::=
 
             crearSubAmbito(decideBaseLabel);
             currentHash = decideBaseLabel;
-            System.out.println(">>> [DEBUG] Inicia ámbito DECIDE: " + decideBaseLabel);
+
 
             decideConds  = new StringBuilder();
             decideBlocks = new StringBuilder();
@@ -2402,7 +2386,7 @@ condicional ::=
             decideBlocks   = null;
             decideBaseLabel = null;
 
-            System.out.println(">>> [DEBUG] Fin ámbito DECIDE, regresando a: " + currentHash);
+
         :}
     ;
 
@@ -2488,7 +2472,6 @@ bucle_loop ::=
         cod3D("\n" + currentHash + "_loop" + contadorLoop + ":");
 
 
-        System.out.println(">>> [DEBUG] Inicia ámbito LOOP: " + loopScope);
         // Guardar el scope anterior
         String anteriorScope = currentHash;
         currentHash = loopScope;
@@ -2511,7 +2494,7 @@ bucle_loop ::=
 
         // Restaurar el scope previo
         currentHash = (String) RESULT;
-        System.out.println(">>> [DEBUG] Fin ámbito LOOP, regresando a: " + currentHash);
+
     :}
     ;
 
@@ -2549,7 +2532,7 @@ bucle_for ::=
         } else {
             cod3D(e + " = " + temporalContador + " + " + valor);
         }
-        System.out.println(">>> [DEBUG] Inicia ámbito FOR: " + forScope);
+
         // Guardar el scope anterior
         String anteriorScope = currentHash;
         currentHash = forScope;
@@ -2563,7 +2546,7 @@ bucle_for ::=
         cod3D("\n" +forFinal+ ":");
         // Recupera el scope anterior
         currentHash = (String) RESULT;
-        System.out.println(">>> [DEBUG] Fin ámbito FOR, regresando a: " + currentHash);
+
     :}
     ;
 
@@ -2582,7 +2565,7 @@ lista_elementos_arreglo_entero ::= ENTERO:entero {:
     ArrayList<String> elementos = new ArrayList<>();
     elementos.add(entero.toString());
     RESULT = elementos;
-    System.out.println(">>> [DEBUG] Primer elemento del arreglo: " + entero);
+
 :}
 | lista_elementos_arreglo_entero:lista COMA ENTERO:entero {: 
     // Agregar elemento a la lista existente
@@ -2590,13 +2573,13 @@ lista_elementos_arreglo_entero ::= ENTERO:entero {:
         ArrayList<String> elementosLista = (ArrayList<String>) lista;
         elementosLista.add(entero.toString());
         RESULT = elementosLista;
-        System.out.println(">>> [DEBUG] Agregando elemento al arreglo: " + entero + ", total: " + elementosLista.size());
+
     } else {
         // Si por alguna razón la lista no es válida, crear una nueva
         ArrayList<String> elementos = new ArrayList<>();
         elementos.add(entero.toString());
         RESULT = elementos;
-        System.out.println(">>> [DEBUG] Creando nueva lista con elemento: " + entero);
+
     }
 :}
 ;
