@@ -1430,33 +1430,47 @@ declara_func ::= tipo_funcion:tipoFun ID:nombreFun
             ;
 
 parametro ::= tipo:ti ID:nombreParam
-                {:
-                    if (esIdExistente(currentHash, nombreParam.toString())) {
-                        System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
-                            nombreParam.toString(), lastLine, lastColumn);
-                        tieneErrores = true;
-                    } else {
-                        NodoToken param = new NodoToken();
-                        param.setTipo(ti);
-                        param.setId(nombreParam.toString());
-                        param.setLinea(String.valueOf(lastLine)); 
-                        param.setColumna(String.valueOf(lastColumn));
+    {:
+        if (esIdExistente(currentHash, nombreParam.toString())) {
+            System.err.printf("\u001B[31mXXX Error semántico: Parámetro '%s' ya declarado en función. Línea %d, columna %d.\u001B[0m%n",
+                nombreParam.toString(), lastLine, lastColumn);
+            tieneErrores = true;
+        } else {
+            NodoToken param = new NodoToken();
+            param.setTipo(ti);
+            param.setId(nombreParam.toString());
+            param.setLinea(String.valueOf(lastLine)); 
+            param.setColumna(String.valueOf(lastColumn));
 
-                        listaTablasSimbolos.get(currentHash).add(param);
+            // 🔹 Marca el parámetro como "ya tiene valor" (aunque no conozcas cuál)
+            // con esto tus chequeos de getValor() != null dejan de reventar
+            switch (ti) {
+                case "int":
+                    param.setValor("0");      // placeholder, no se usa en las expresiones
+                    break;
+                case "float":
+                    param.setValor("0.0");
+                    break;
+                case "boolean":
+                    param.setValor("true");   // o "false", da igual, solo importa que no sea null
+                    break;
+                case "char":
+                    param.setValor("'\\0'");
+                    break;
+                case "string":
+                    param.setValor("\"\"");   // string vacío
+                    break;
+                default:
+                    param.setValor("param");  // fallback
+            }
 
-                        String temp = "";
-                        if ("int".equals(ti)) {
-                            temp = nuevaTempInt();
-                        } else if ("float".equals(ti)) {
-                            temp = nuevaTempFloat();
-                        } else {
-                            temp = nuevaTempInt(); 
-                        }
-                        RESULT = nombreParam.toString();
+            listaTablasSimbolos.get(currentHash).add(param);
 
-                    }
-                :}
-            ;
+            // No necesitas temp aquí para semántica; lo importante es RESULT
+            RESULT = nombreParam.toString();
+        }
+    :}
+    ;
 
 
 //+++++++++++++++++++++DECLARACIONES Y ASIGNACIONES+++++++++++++++
