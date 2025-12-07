@@ -147,15 +147,12 @@ public void inicarTS() {
         try{
         FileWriter writer = new FileWriter("tokens.txt");
         for(String key: listaTablasSimbolos.keySet()){
-                //System.out.println("------------------Tabla de simbolo : " + key);
+
             writer.write("Tabla de simbolos: " + key + "\n");
             writer.write("********Valores*********** \n");
-                //System.out.println("********Valores*********** ");
             for(NodoToken item : listaTablasSimbolos.get(key)){
-                    //System.out.println(item.toString());
                 writer.write(item.toString() + "\n");
             }
-                //System.out.println("------------------Fin tabla de simbolos : " + key);
             writer.write("------------------Fin tabla de simbolos : " + key + "\n\n");
         }
         writer.close();
@@ -177,7 +174,7 @@ public void inicarTS() {
                 tipo = token.getTipo();
             }
         }
-        System.out.println("tipo: "+tipo);
+
         return tipo;
     }
 
@@ -275,7 +272,6 @@ public void inicarTS() {
             target3D = codigoIntermedio;
         }
         target3D.append(codigo).append("\n");
-        System.out.println(">>> [3AC] " + codigo);
     }
 
     /**
@@ -788,7 +784,7 @@ precedence right NOT;
 start with program;
 
 program ::= {:  
-                System.out.println("generando tabla de símbolos");
+
                 inicarTS();
             :}
                 lista_global main_funcion lista_global
@@ -800,11 +796,10 @@ program ::= {:
                         java.nio.file.Paths.get("intermedio.txt"),
                         codigoIntermedio.toString().getBytes()
                     );
-                    System.out.println(">>> [3AC] Código intermedio guardado en intermedio.txt");
+
                 } catch (Exception e) {
                     System.err.println("MAL" + e.getMessage());
                 }
-                System.out.println("*******************++fin de ejecución");
 
             :}
         ;
@@ -815,7 +810,7 @@ lista_global ::= elemento_global lista_global
 
 elemento_global ::= sentencia
     | funcion
-    {: System.out.println("Fin variables globales"); :}
+    {: :}
     ;
 
 main_funcion ::= declara_main_func PAR_A PAR_C bloque
@@ -919,7 +914,6 @@ asignacion_arreglo::=
         {:
             NodoToken varToken = buscarID(nombreVar.toString());
             var tipoVar = varToken != null ? varToken.getTipo() : "desconocido";
-            System.out.println("**********TRABAJANDO************+");
             if(varToken != null && varToken.getTipo() == "arreglo_entero"){
                 
                 StringBuilder elementosStr = new StringBuilder();
@@ -1274,8 +1268,7 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
 
                                 cod3D("param " + tempValor);
                                 cod3D("call output(), 1");
-                                System.out.println(">>> [3AC] param " + tempValor);
-                                System.out.println(">>> [3AC] call output(), 1");
+
 
                                 NodoToken imp = new NodoToken();
                                 imp.setTipo("llamada_funcion_sistema");
@@ -1320,8 +1313,7 @@ leer ::= LEER PAR_A ID:var PAR_C
                     cod3D(temp + " = call input(), 1");
                     cod3D(var + " = " + temp);
 
-                    System.out.println(">>> [3AC] " + temp + " = call input(), 1");
-                    System.out.println(">>> [3AC] " + var + " = " + temp);
+
 
                     NodoToken leerNode = new NodoToken();
                     leerNode.setTipo("llamada_funcion_sistema");
@@ -1380,7 +1372,6 @@ funcion ::= declara_func:nombreFun PAR_A lista_parametros:params PAR_C
         bloque
                 {:
                     currentHash = globalHash;
-                    System.out.println(">> [TS] Regresando a tabla global.");
                     cod3D("\n" + nombreFun + "_end:");
                 :}
         | declara_func PAR_A parametros_opt PAR_C error
@@ -1887,8 +1878,7 @@ expresion_arit ::= expresion_arit:e1 MAS termino:e2
                         String t2 = ((HashMap)e2).get("temp").toString();
 
                         if (sonTiposCompatibles(obtenerTipoExpresion(v1), obtenerTipoExpresion(v2))) {
-
-                            System.out.println(v1 + " + " + v2);            
+           
                             NodoToken var1 = buscarID(v1);
                             NodoToken var2 = buscarID(v2);
 

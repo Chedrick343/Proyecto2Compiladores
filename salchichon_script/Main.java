@@ -29,9 +29,6 @@ public class Main {
             Lexer scan = new Lexer(new FileReader(archivo));
             Symbol s;
             
-            while ((s = scan.next_token()).sym != sym.EOF) {
-                System.out.println("Token: " + sym.terminalNames[s.sym] + " → " + s.value);
-            }
             scan.closeWriter();
             
         } catch (Exception e) {
