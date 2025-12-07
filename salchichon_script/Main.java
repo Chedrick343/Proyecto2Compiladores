@@ -1,14 +1,39 @@
 package salchichon_script;
 
+import java.io.File;
 import java.io.FileReader;
+
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+
 import java_cup.runtime.Symbol;
 
 public class Main {
 
     public static void main(String[] args) {
-        generarCompilador();
-        probarLexer("salchichon_script/ejemplo código 1.sintactico.base 1.scc");
-        probarParser("salchichon_script/ejemplo código 1.sintactico.base 1.scc");
+        JFrame frame = new JFrame();
+        frame.setAlwaysOnTop(true);
+
+        JFileChooser chooser = new JFileChooser();
+        String rutaActual = System.getProperty("user.dir");
+        chooser.setCurrentDirectory(new File(rutaActual));
+        chooser.setDialogTitle("Selecciona un archivo");
+
+        int result = chooser.showOpenDialog(frame);
+        File archivo;
+        if (result == JFileChooser.APPROVE_OPTION) {
+            archivo = chooser.getSelectedFile();
+            String ruta = archivo.getAbsolutePath();
+            System.out.println("Ruta seleccionada: " + archivo.getAbsolutePath());
+            generarCompilador();
+            probarLexer(ruta);
+            probarParser(ruta);
+        } else {
+            System.out.println("Selección cancelada.");
+        }
+
+        frame.dispose();
+        
 
     }
 

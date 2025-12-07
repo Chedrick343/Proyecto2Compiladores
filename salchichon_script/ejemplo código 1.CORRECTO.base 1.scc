@@ -83,7 +83,7 @@ Comentario 1
 	let bool bl1 = in1 >= w ~ false @ Σ є func1 є 'A', 'd'э  > 1.6  э $ |semantico in1 >= fl1, func2
 	
 	
-	output є true э $ | TO-DO: SOLO DEBE PERMITIRL STRING, INT, FLOAT, CHAR ...fixed... Se ha corregido, si el valor ingresado es de tipo bool se imprime un error
+	output є true э $ |s TO-DO: SOLO DEBE PERMITIRL STRING, INT, FLOAT, CHAR ...fixed... Se ha corregido, si el valor ingresado es de tipo bool e imprime un error
 	loop
 		let int _var_2 = w - 1$ |semantico
 		let int _var_ = w - 1$ |semantico
