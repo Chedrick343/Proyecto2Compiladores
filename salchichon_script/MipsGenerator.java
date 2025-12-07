@@ -12,6 +12,7 @@ public class MipsGenerator {
 
     private final Map<String, String> dataDecls = new LinkedHashMap<>();
     private final List<String> paramQueue = new ArrayList<>();
+    // esto qur??? me imagino que es para manejar param de funciones, hagale chedrick no sea vago
 
     private boolean isTemp(String name) {
         return name.matches("^[tf]\\d+$");
@@ -29,6 +30,12 @@ public class MipsGenerator {
         //recorremos el archivo una primeera vez para ver qué es lo que va
         // en el data
         firstPass(lines);
+
+        // escribimos el header del archivo mips
+        writeHeader();
+
+        // ahora si ya la segunda pasada
+        secondPass(lines);
 
         out.flush();
         out.close();
@@ -165,7 +172,7 @@ public class MipsGenerator {
         out.println("    syscall");
         out.println();
 
-        out.println("#SYSCALL");
+        out.println("# ================== SYSCALL");
         out.println("printStr:");
         out.println("    li   $v0, 4");
         out.println("    syscall");
@@ -195,9 +202,168 @@ public class MipsGenerator {
         out.println("    syscall");
         out.println("    jr $ra");
         out.println(".end readFloat");
+        out.println("# ================== FIN SYSCALL");
         out.println();
     }
 
+    // La segunda pasada ya es para generar el codigo MIPS
+    // Aqui es donde ya se hace la logica y traduccion
+    private void secondPass(List<String> lines) {
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+
+            // TO-DO: hay que hacer manejo de etiquetas, if-goto, parametros, llamadas a funciones.
 
 
+
+
+            // Asignaciones
+            if (line.contains("=")) {
+                handleAssign(line);
+                continue;
+            }
+
+            // Si hay algo que no deberia llegar
+            System.out.println("quesesto " + line);
+        }
+    }
+
+
+    // Manejo de asignaciones y aritmetica
+    private void handleAssign(String line) {
+
+        int idxEq = line.indexOf('=');
+        String left  = line.substring(0, idxEq).trim();
+        String right = line.substring(idxEq + 1).trim();
+
+        if (right.startsWith("call ")) {
+            handleAssignFromCall(left, right);
+            return;
+        }
+
+        if (right.matches("-?\\d+")) {
+            out.println("    li   $t0, " + right);
+            out.println("    sw   $t0, " + left);
+            return;
+        }
+
+        if (right.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            String rightDecl = dataDecls.get(right);
+
+            // Si el que vamos a asignar es asciiz, hay que copiar el address
+            // no el contenido, la no lw
+            if (rightDecl != null && rightDecl.contains(".asciiz")) {
+                out.println("    la   $t0, " + right);   // t0 = &t5
+                out.println("    sw   $t0, " + left);    // str = &t5
+            } else {
+                out.println("    lw   $t0, " + right);
+                out.println("    sw   $t0, " + left);
+            }
+            return;
+        }
+
+        // manejo de operaciones de dos operandos
+        // No maneja floats aun
+        String[] parts = right.split("\\s+");
+        if (parts.length == 3) {
+            String op1 = parts[0];
+            String op  = parts[1];
+            String op2 = parts[2];
+
+            loadIntLike("$t0", op1);
+            loadIntLike("$t1", op2);
+
+            switch (op) {
+                case "+":
+                    out.println("    add  $t2, $t0, $t1");
+                    break;
+                case "-":
+                    out.println("    sub  $t2, $t0, $t1");
+                    break;
+                case "*":
+                    out.println("    mul  $t2, $t0, $t1");
+                    break;
+                case "%":
+                    out.println("    div  $t0, $t1");
+                    out.println("    mfhi $t2");
+                    break;
+                case "//":
+                    out.println("    div  $t0, $t1");
+                    out.println("    mflo $t2");
+                    break;
+                case ">":
+                    genRelational("sgt", left);
+                    return;
+                case "<":
+                    genRelational("slt", left);
+                    return;
+
+                // TO-DO: completar con más operadores (>=, <=, ==, !=, &&, || y manejo de floats)
+                // IMPORTANTE
+
+                default:
+                    out.println("    move $t2, $t0");
+            }
+
+            out.println("    sw   $t2, " + left);
+            return;
+        }
+
+        // Caso de negacion
+        if (right.startsWith("-")) {
+            String expr = right.substring(1).trim();
+            loadIntLike("$t0", expr);
+            out.println("    sub  $t1, $zero, $t0");
+            out.println("    sw   $t1, " + left);
+            return;
+        }
+
+        if (right.startsWith("!")) {
+            String expr = right.substring(1).trim();
+            loadIntLike("$t0", expr);
+            out.println("    sltu $t1, $t0, 1");
+            out.println("    sw   $t1, " + left);
+            return;
+        }
+    }
+
+    // Carga un int o un literal en un registro
+    private void loadIntLike(String reg, String operand) {
+        if (operand.matches("-?\\d+")) {
+            out.println("    li   " + reg + ", " + operand);
+        } else {
+            out.println("    lw   " + reg + ", " + operand);
+        }
+    }
+
+    // Genera codigo para operaciones relacionales
+    private void genRelational(String mipsInstr, String left) {
+        out.println("    " + mipsInstr + "  $t2, $t0, $t1");
+        out.println("    sw   $t2, " + left);
+    }
+
+    // Manejo de asignaciones desde llamadas a funciones
+    private void handleAssignFromCall(String left, String right) {
+        int startName = right.indexOf("call") + 4;
+        int par = right.indexOf('(', startName);
+        String funcName = right.substring(startName, par).trim();
+
+        if (funcName.equals("readFloat")) {
+            out.println("    jal  readFloat");
+            // usamos store word coprocessor 1 para el float que queda 
+            out.println("    swc1 $f0, " + left);
+            return;
+        }
+
+        if (funcName.equals("readInt")) {
+            out.println("    jal  readInt");
+            out.println("    sw   $v0, " + left);
+            return;
+        }
+
+        // funcion normal con retorno en $v0
+        out.println("    jal  " + funcName);
+        out.println("    sw   $v0, " + left);
+    }
 }
