@@ -30,8 +30,6 @@ public class MipsGenerator {
         //recorremos el archivo una primeera vez para ver qué es lo que va
         // en el data
         firstPass(lines);
-
-        // escribimos el header del archivo mips
         writeHeader();
 
         // ahora si ya la segunda pasada
