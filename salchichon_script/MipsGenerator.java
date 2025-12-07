@@ -29,7 +29,7 @@ public class MipsGenerator {
         //recorremos el archivo una primeera vez para ver qué es lo que va
         // en el data
         firstPass(lines);
-
+        writeHeader();
         out.flush();
         out.close();
     }
