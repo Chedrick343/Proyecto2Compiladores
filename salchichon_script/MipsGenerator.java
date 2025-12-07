@@ -142,5 +142,62 @@ public class MipsGenerator {
     }
 
 
+    //Aquí basicamente escribimos en el data todo lo que guardamos anteriormente
+    //Y además incluimos unos macros, (algunas facilitadas por el profe)
+    //para facilitar el código que escribiremos en MIPS
+    private void writeHeader() {
+
+        out.println(".data");
+        out.println("    nl: .asciiz \"\\n\"");
+
+        for (String decl : dataDecls.values()) {
+            out.println("    " + decl);
+        }
+
+        out.println();
+        out.println(".text");
+        out.println(".globl main");
+        out.println();
+
+        out.println("main:");
+        out.println("    jal principal");
+        out.println("    li   $v0, 10");
+        out.println("    syscall");
+        out.println();
+
+        out.println("#SYSCALL");
+        out.println("printStr:");
+        out.println("    li   $v0, 4");
+        out.println("    syscall");
+        out.println("    jr $ra");
+        out.println(".end printStr");
+        out.println();
+        out.println("printInt:");
+        out.println("    li   $v0, 1");
+        out.println("    syscall");
+        out.println("    jr $ra");
+        out.println(".end printInt");
+        out.println();
+        out.println("printFloat:");
+        out.println("    li   $v0, 2");
+        out.println("    syscall");
+        out.println("    jr $ra");
+        out.println(".end printFloat");
+        out.println();
+        out.println("readInt:");
+        out.println("    li   $v0, 5");
+        out.println("    syscall");
+        out.println("    jr $ra");
+        out.println(".end readInt");
+        out.println();
+        out.println("readFloat:");
+        out.println("    li   $v0, 6");
+        out.println("    syscall");
+        out.println("    jr $ra");
+        out.println(".end readFloat");
+        out.println();
+    }
+
+
 
 }
