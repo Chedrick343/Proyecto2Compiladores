@@ -1,0 +1,30 @@
+{
+  "name": "salchichon-script",
+  "displayName": "Salchichón Script",
+  "description": "Soporte básico para el lenguaje Salchichón Script (.scc)",
+  "version": "0.0.1",
+  "publisher": "zepgi",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "salchichon",
+        "aliases": ["Salchichon Script", "salchichon"],
+        "extensions": [".scc"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "salchichon",
+        "scopeName": "source.salchichon",
+        "path": "./syntaxes/salchichon.tmLanguage.json"
+      }
+    ]
+  }
+}

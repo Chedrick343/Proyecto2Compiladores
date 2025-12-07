@@ -1,0 +1,73 @@
+{
+  "scopeName": "source.salchichon",
+  "patterns": [
+    {
+      "name": "comment.line.salchichon",
+      "match": "\\|.*$"
+    },
+    {
+      "name": "comment.block.salchichon",
+      "begin": "¡",
+      "end": "!",
+      "patterns": [
+        {
+          "match": ".",
+          "name": "comment.block.salchichon"
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.double.salchichon",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.salchichon"
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.salchichon",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.salchichon"
+        }
+      ]
+    },
+    {
+      "name": "constant.numeric.integer.salchichon",
+      "match": "\\b\\d+\\b"
+    },
+    {
+      "name": "constant.numeric.float.salchichon",
+      "match": "\\b\\d+\\.\\d+\\b"
+    },
+    {
+      "name": "keyword.control.salchichon",
+      "match": "\\b(decide|of|else|end|loop|exit|when|for|step|to|downto|do|return|init|principal)\\b"
+    },
+    {
+      "name": "keyword.declaration.salchichon",
+      "match": "\\b(let|output|input|є|э)\\b"
+    },
+    {
+      "name": "storage.type.salchichon",
+      "match": "\\b(int|float|bool|boolean|string|char|void)\\b"
+    },
+    {
+      "name": "keyword.operator.salchichon",
+      "match": "(\\+|-|\\*|/|//|%|\\^|@|~|Σ|!=|==|<=|>=|<|>)"
+    },
+    {
+      "name": "variable.other.salchichon",
+      "match": "\\b[_a-zA-Z][_a-zA-Z0-9]*\\b"
+    }
+  ],
+  "repository": {},
+  "fileTypes": ["scc"],
+  "name": "Salchichon Script"
+}
