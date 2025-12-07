@@ -1258,17 +1258,25 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                             System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'bool'. Línea %d, columna %d.\u001B[0m%n",
                                 lastLine, lastColumn);
                             tieneErrores = true;
-                        }
-                        if ("void".equals(tipoExpr)) {
+                        } else if (tipoExpr == "char") {
+                            System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'char'. Línea %d, columna %d.\u001B[0m%n",
+                                lastLine, lastColumn);
+                            tieneErrores = true;
+                        } else if ("void".equals(tipoExpr)) {
                             System.err.printf("\u001B[31mXXX Error semántico: No se puede imprimir una expresión de tipo 'void'. Línea %d, columna %d.\u001B[0m%n",
                                 lastLine, lastColumn);
                             tieneErrores = true;
                         } else {
                             if (valorReal != "error") {
-
                                 cod3D("param " + tempValor);
-                                cod3D("call output(), 1");
 
+                                if (tipoExpr == "string") {
+                                    cod3D("call printStr(), 1");
+                                } else if (tipoExpr == "int") {
+                                    cod3D("call printInt(), 1");
+                                } else if (tipoExpr == "float") {
+                                    cod3D("call printFloat(), 1");
+                                }
 
                                 NodoToken imp = new NodoToken();
                                 imp.setTipo("llamada_funcion_sistema");
@@ -1308,11 +1316,22 @@ leer ::= LEER PAR_A ID:var PAR_C
                     tieneErrores = true;
                 }else{
 
-                    String temp = nuevaTempInt();
-                    cod3D(temp + " = call input(), 1");
+                    String temp;
+
+                    if (tipo == "float") {
+                        temp = nuevaTempFloat();
+                        cod3D(temp + " = call readFloat(), 1");
+                    } else if (tipo == "string") {
+                        temp = nuevaTempInt();
+                        cod3D(temp + " = call readString(), 1");
+                    } else if (tipo == "int") {
+                        temp = nuevaTempInt();
+                        cod3D(temp + " = call readInt(), 1");
+                    } else {
+                        temp = nuevaTempInt();
+                        cod3D(temp + " = call readInt(), 1"); // por defecto int
+                    }
                     cod3D(var + " = " + temp);
-
-
 
                     NodoToken leerNode = new NodoToken();
                     leerNode.setTipo("llamada_funcion_sistema");
