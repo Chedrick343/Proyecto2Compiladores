@@ -1,7 +1,11 @@
 init void principal є  э  ¿ 
 	let string str = "hola"$
 	let int suma = 2 + 2$
+	let int numero$
 	output є suma э$
 	output є str э$
+	input є numero э$
+	numero = numero + 2$
+	output є numero э$
 	return$
 ? 
