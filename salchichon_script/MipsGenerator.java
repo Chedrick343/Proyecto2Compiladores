@@ -212,6 +212,36 @@ public class MipsGenerator {
             if (line.isEmpty()) continue;
 
             // TO-DO: hay que hacer manejo de etiquetas, if-goto, parametros, llamadas a funciones.
+            // DID IT: Aquí escribimos en el archivo de salida las lineas que no requieren de mucha lógica
+            if (line.endsWith(":")) {  //Escribimos etiquetas
+                out.println(line);
+                continue;
+            }
+
+            if (line.startsWith("goto ")) {
+                String label = line.substring(5).trim();
+                out.println("    j " + label);//escribimos saltos a funciones
+                continue;
+            }
+
+            if (line.startsWith("if ")) {
+                // if f6 goto func1_decide1_caso1
+                handleIfGoto(line); //llamamos a un handle para modularizar la lógica
+                continue;
+            }
+
+            if (line.startsWith("param ")) {    //si lo que se esta ingresando es un parametro
+                String arg = line.substring("param".length()).trim(); 
+                paramQueue.add(arg); //agregamos el parametro a la lista de parametros
+                continue;
+            }
+
+            if (line.startsWith("call ")) {
+                handleCall(line);
+                out.println("    la $a0, nl");
+                out.println("    jal printStr");
+                continue;
+            }
 
 
 
@@ -226,8 +256,86 @@ public class MipsGenerator {
             System.out.println("quesesto " + line);
         }
     }
+    private void handleCall(String line) {
+        // Ej: "call printInt(), 1"
+        int startName = line.indexOf("call") + 4;
+        int par = line.indexOf('(', startName);
+        String funcName = line.substring(startName, par).trim();
 
-
+        switch (funcName) { // si algunas de las llamadas a funciones son funciones del sistema entonces
+            case "printInt"://llamamos a los handle para escribir los llamados al sistema
+                handleCallPrintInt(); 
+                break;
+            case "printFloat":
+                handleCallPrintFloat();
+                break;
+            case "printStr":
+                handleCallPrintStr();
+                break;
+            case "readInt":
+            case "readFloat":
+                // Estas llamadas se manejan desde handleAssignFromCall
+                // porque devuelven valor (x = call readFloat(), 1)
+                out.println("    # ERROR: llamada a " + funcName +
+                            " sin asignación no está soportada aún");
+                break;
+            case "return":
+                // call return(), 1
+                out.println("    jr  $ra");
+                break;
+            default:
+                out.println("    jal " + funcName);
+        }
+    }
+    private void handleCallPrintFloat() {
+        if (paramQueue.isEmpty()) {
+            out.println("    # ERROR: printFloat sin param");
+            return;
+        }
+        String arg = paramQueue.get(0);
+        out.println("    lwc1 $f12, " + arg);
+        out.println("    jal  printFloat");
+    }
+    private void handleCallPrintInt() {
+        if (paramQueue.isEmpty()) {
+            out.println("    # ERROR: printInt sin param");
+            return;
+        }
+        String arg = paramQueue.get(0); // sólo un parámetro
+        if (arg.matches("-?\\d+")) {
+            out.println("    li   $a0, " + arg);
+        } else {
+            out.println("    lw   $a0, " + arg);
+        }
+        out.println("    jal  printInt");
+    }
+    private void handleCallPrintStr() {
+        if (paramQueue.isEmpty()) {
+            out.println("    # ERROR: printStr sin param");
+            return;
+        }
+        String arg = paramQueue.get(0);
+        String decl = dataDecls.get(arg);
+        if (decl != null && decl.contains(".asciiz")) {
+            // Es una cadena literal: label directo
+            out.println("    la   $a0, " + arg);
+        } else {
+            // Es una variable string/puntero:
+            // str: .word 0, que en tiempo de ejecución tendrá la dirección del literal.
+            out.println("    lw   $a0, " + arg);
+        }
+        out.println("    jal  printStr");
+    }
+    private void handleIfGoto(String line) {
+        //esperamos encontrar algo como if condicion goto etiqueta
+        //entonces hacemos un split
+        String[] parts = line.split("\\s+");
+        String cond = parts[1];
+        String label = parts[3];
+        //aqui cargamos la condición y despues saltamos si la condicion es falsa
+        out.println("    lw   $t0, " + cond);
+        out.println("    bne  $t0, $zero, " + label);  //escribimos en el archivo de salida
+    }
     // Manejo de asignaciones y aritmetica
     private void handleAssign(String line) {
 

@@ -6,9 +6,16 @@ _s1_ = "Hola mundo"$
 
 let int x = 2 // 2$
 
+void suma є int num, int num2  э ¿
+	let int sumacion = num+num2$
+	output є sumacion э$
+	return$
+?
+
 init void principal є  э  ¿ 
 
 	let int _i_ = 10$
+	suma є 10, 10 э$
 	output є _i_ э $
 
 	let string _str_ = "Compiladores 2024"$
