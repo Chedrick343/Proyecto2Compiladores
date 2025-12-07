@@ -98,11 +98,9 @@ public class MipsGenerator {
             if (right.matches("[A-Za-z_][A-Za-z0-9_]*")) {
                 String declR = dataDecls.get(right);
                 if (declR != null && declR.contains(".asciiz")) {
-                    String afterColon = declR.substring(declR.indexOf(':') + 1).trim();  // ".asciiz \"...\""
-                    if (!isTemp(left)) {
-                        dataDecls.put(left, left + ": " + afterColon);
-                    }
-                    continue; 
+                    String afterColon = declR.substring(declR.indexOf(':') + 1).trim();
+                    dataDecls.put(left, left + ": " + afterColon);
+                    continue;
                 }
             }
 
@@ -172,32 +170,56 @@ public class MipsGenerator {
 
         out.println("# ================== SYSCALL");
         out.println("printStr:");
+        out.println("    add $sp, $sp, -8");
+        out.println("    sw $ra, 0($sp)");
+
         out.println("    li   $v0, 4");
         out.println("    syscall");
+
+        out.println("    lw  $ra, 0($sp)");
+        out.println("    addi $sp, $sp, 8");
         out.println("    jr $ra");
         out.println(".end printStr");
         out.println();
+
         out.println("printInt:");
+        out.println("    add $sp, $sp, -8");
+        out.println("    sw $ra, 0($sp)");
         out.println("    li   $v0, 1");
         out.println("    syscall");
+        out.println("    lw  $ra, 0($sp)");
+        out.println("    addi $sp, $sp, 8");
         out.println("    jr $ra");
         out.println(".end printInt");
         out.println();
         out.println("printFloat:");
+        out.println("    add $sp, $sp, -8");
+        out.println("    sw $ra, 0($sp)");
         out.println("    li   $v0, 2");
         out.println("    syscall");
+        out.println("    lw  $ra, 0($sp)");
+        out.println("    addi $sp, $sp, 8");
         out.println("    jr $ra");
         out.println(".end printFloat");
         out.println();
+
         out.println("readInt:");
+        out.println("    add $sp, $sp, -8");
+        out.println("    sw $ra, 0($sp)");
         out.println("    li   $v0, 5");
         out.println("    syscall");
+        out.println("    lw  $ra, 0($sp)");
+        out.println("    addi $sp, $sp, 8");
         out.println("    jr $ra");
         out.println(".end readInt");
         out.println();
         out.println("readFloat:");
+        out.println("    add $sp, $sp, -8");
+        out.println("    sw $ra, 0($sp)");
         out.println("    li   $v0, 6");
         out.println("    syscall");
+        out.println("    lw  $ra, 0($sp)");
+        out.println("    addi $sp, $sp, 8");
         out.println("    jr $ra");
         out.println(".end readFloat");
         out.println("# ================== FIN SYSCALL");
@@ -265,12 +287,15 @@ public class MipsGenerator {
         switch (funcName) { // si algunas de las llamadas a funciones son funciones del sistema entonces
             case "printInt"://llamamos a los handle para escribir los llamados al sistema
                 handleCallPrintInt(); 
+                paramQueue.remove(0);
                 break;
             case "printFloat":
                 handleCallPrintFloat();
+                paramQueue.remove(0);
                 break;
             case "printStr":
                 handleCallPrintStr();
+                paramQueue.remove(0);
                 break;
             case "readInt":
             case "readFloat":

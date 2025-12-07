@@ -1,29 +1,6 @@
- 
-let string _s1_$
-let bool _b1_$
-
-_s1_ = "Hola mundo"$
-
-let int x = 2 // 2$
-
-void suma є int num, int num2  э ¿
-	let int sumacion = num+num2$
-	output є sumacion э$
-	return$
-?
-
 init void principal є  э  ¿ 
-
-	let int _i_ = 10$
-	suma є 10, 10 э$
-	output є _i_ э $
-
-	let string _str_ = "Compiladores 2024"$
-	output є _str_ э $
-
-	let float super$
-	input є super э $
-	output є super э $
+	let string str = "compiladores"$
+	output є str э$
 
 	return$
- ? 
+? 
