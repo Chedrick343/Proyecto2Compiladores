@@ -1294,7 +1294,7 @@ imprimir ::= IMPRIMIR PAR_A expresion:e PAR_C
                                 imp.setColumna(String.valueOf(lastColumn));
                                 listaTablasSimbolos.get(currentHash).add(imp);
 
-                                System.out.println(">>> [DEBUG] Uso de output() en " + currentHash +
+                                System.out.println(">>> [DEBUG YPLOOOOO] Uso de output() en " + currentHash +
                                     " con valor: " + valorReal + " (temp: " + tempValor + ")");
                             }
                         }
