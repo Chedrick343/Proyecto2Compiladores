@@ -1055,7 +1055,7 @@ sentencia ::= declaracion FIN_E
                             tieneErrores = true;
                         } else {
                             cod3D("param " + tempValor);
-                            cod3D("call return()");
+                            cod3D("call return(), 1");
                         }
                     }
                 }

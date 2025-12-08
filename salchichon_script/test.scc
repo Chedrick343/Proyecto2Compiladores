@@ -3,7 +3,10 @@ void suma є int numero1, int numero2, int numero3, int numero4, int numero5 э 
 	output є sumacion э$
 	return$
 ?
-
+float elemento є float numero э¿
+	return numero$
+?
+	
 init void principal є  э  ¿ 
 	let int numEntero$
 	output є "Ingrese un numero entero: " э$
