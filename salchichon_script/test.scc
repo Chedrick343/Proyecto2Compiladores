@@ -1,11 +1,16 @@
+void suma є int numero1, int numero2, int numero3, int numero4, int numero5 э ¿
+	let int sumacion = numero1 + numero2 + numero3 + numero4 + numero5$
+	output є sumacion э$
+	return$
+?
+
 init void principal є  э  ¿ 
-	let string str = "hola"$
-	let int suma = 2 + 2$
-	let int numero$
-	output є suma э$
+	let int numEntero$
+	output є "Ingrese un numero entero: " э$
+	input є numEntero э$
+
+	suma є numEntero, 10, 10, 20, 10 э$
+	let string str = "hola mundo"$
 	output є str э$
-	input є numero э$
-	numero = numero + 2$
-	output є numero э$
 	return$
 ? 

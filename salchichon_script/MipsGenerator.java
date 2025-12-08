@@ -12,7 +12,6 @@ public class MipsGenerator {
 
     private final Map<String, String> dataDecls = new LinkedHashMap<>();
     private final List<String> paramQueue = new ArrayList<>();
-    // esto qur??? me imagino que es para manejar param de funciones, hagale chedrick no sea vago
 
     private boolean isTemp(String name) {
         return name.matches("^[tf]\\d+$");
@@ -73,6 +72,12 @@ public class MipsGenerator {
                 if (!dataDecls.containsKey(left)) {
                     int code = right.charAt(1);
                     dataDecls.put(left, left + ": .word " + code); //iniciamos el char con word
+                }
+                continue;
+            }
+            if (right.startsWith("param[")) {
+                if (!dataDecls.containsKey(left)) {
+                    dataDecls.put(left, left + ": .word 0");
                 }
                 continue;
             }
@@ -231,13 +236,46 @@ public class MipsGenerator {
     // La segunda pasada ya es para generar el codigo MIPS
     // Aqui es donde ya se hace la logica y traduccion
     private void secondPass(List<String> lines) {
+        boolean inFunction = false;
+        int linesCounter = -1;
+        String currentFunction = "";
         for (String raw : lines) {
+            linesCounter++;
             String line = raw.trim();
             if (line.isEmpty()) continue;
+            
 
             // TO-DO: hay que hacer manejo de etiquetas, if-goto, parametros, llamadas a funciones.
-            // DID IT: Aquí escribimos en el archivo de salida las lineas que no requieren de mucha lógica
-            if (line.endsWith(":")) {  //Escribimos etiquetas
+            // DID IT: Aquí escribimos en el archivo de salida las lineas que cumplen con lo que hay que hacer
+            if (line.endsWith(":") && !line.startsWith("principal") && !line.contains("_end")) {
+                inFunction = true;
+                currentFunction = line.substring(0, line.length() - 1);
+                out.println(line);
+                
+                // Prologo de función - espacio para guardar $ra y frame pointer
+                out.println("    addiu $sp, $sp, -8");
+                out.println("    sw    $ra, 4($sp)");
+                out.println("    sw    $fp, 0($sp)");
+                out.println("    move  $fp, $sp");
+                
+                // Reservar espacio para variables locales si es necesario
+                // Y cargar parámetros a variables temporales
+                handleFunctionPrologue(currentFunction);
+                continue;
+            }
+            
+            // Detectar fin de función
+            if (line.contains("_end:")) {
+                inFunction = false;
+                out.println(line);
+                continue;
+            }
+            if(line.startsWith("principal")){
+                out.println(line);
+                out.println("    add $sp, $sp, -8");
+                out.println("    sw $ra, 0($sp)");
+            }
+                if (line.endsWith(":") && !line.equals("principal:")) {
                 out.println(line);
                 continue;
             }
@@ -261,14 +299,19 @@ public class MipsGenerator {
             }
 
             if (line.startsWith("call ")) {
-                handleCall(line);
-                out.println("    la $a0, nl");
-                out.println("    jal printStr");
-                continue;
+                String lineaPrincipal = lines.get(linesCounter+2).trim();
+                System.out.println(lineaPrincipal);
+                if(lineaPrincipal.contains("principal_end")){
+                    out.println("    lw  $ra, 0($sp)");
+                    out.println("    addiu $sp, $sp, 8");
+                    out.println("    jr $ra"); 
+                }else{
+                    handleCall(line);
+                    out.println("    la $a0, nl");
+                    out.println("    jal printStr");
+                    continue;
+                }
             }
-
-
-
 
             // Asignaciones
             if (line.contains("=")) {
@@ -280,38 +323,97 @@ public class MipsGenerator {
             System.out.println("quesesto " + line);
         }
     }
+    private void handleFunctionPrologue(String funcName) {
+        out.println("    # Cargando parámetros para " + funcName);
+    }
     private void handleCall(String line) {
         // Ej: "call printInt(), 1"
+        System.out.println(line);
         int startName = line.indexOf("call") + 4;
         int par = line.indexOf('(', startName);
         String funcName = line.substring(startName, par).trim();
+        int cantidadParametros = Integer.parseInt(line.substring(line.lastIndexOf(',') + 1).trim());
+        System.out.println("Parámetros: " + cantidadParametros);
 
-        switch (funcName) { // si algunas de las llamadas a funciones son funciones del sistema entonces
-            case "printInt"://llamamos a los handle para escribir los llamados al sistema
-                handleCallPrintInt(); 
-                paramQueue.remove(0);
+        switch (funcName) {
+            case "printInt":
+                handleCallPrintInt();
+                paramQueue.clear(); // Limpiamos la cola
                 break;
             case "printFloat":
                 handleCallPrintFloat();
-                paramQueue.remove(0);
+                paramQueue.clear();
                 break;
             case "printStr":
                 handleCallPrintStr();
-                paramQueue.remove(0);
+                paramQueue.clear();
                 break;
             case "readInt":
             case "readFloat":
-                // Estas llamadas se manejan desde handleAssignFromCall
-                // porque devuelven valor (x = call readFloat(), 1)
                 out.println("    # ERROR: llamada a " + funcName +
                             " sin asignación no está soportada aún");
+                paramQueue.clear();
                 break;
             case "return":
                 // call return(), 1
-                out.println("    jr  $ra");
+                handleFunctionReturn();
+                paramQueue.clear();
                 break;
             default:
-                out.println("    jal " + funcName);
+                // Para funciones definidas por el usuario
+                handleUserFunctionCall(funcName, cantidadParametros);
+                paramQueue.clear();
+        }
+    }
+    private void handleFunctionReturn() {
+        out.println("    # Epílogo de función");
+        out.println("    move  $sp, $fp");
+        out.println("    lw    $ra, 4($sp)");
+        out.println("    lw    $fp, 0($sp)");
+        out.println("    addiu $sp, $sp, 8");
+        out.println("    jr    $ra");
+    }
+    private void handleUserFunctionCall(String funcName, int paramCount) {
+        // Para funciones con más de 4 parámetros, necesitamos ajustar
+        // la pila antes de llamar
+        
+        if (paramCount > 4) {
+            out.println("    # Reservando espacio para parámetros en pila");
+            int stackSpace = (paramCount - 4) * 4;
+            out.println("    addiu $sp, $sp, -" + stackSpace);
+        }
+        
+        // Pasar parámetros
+        for (int i = 0; i < Math.min(paramCount, 4); i++) {
+            String arg = paramQueue.get(i);
+            if (arg.matches("-?\\d+")) {
+                out.println("    li   $a" + i + ", " + arg);
+            } else {
+                out.println("    lw   $a" + i + ", " + arg);
+            }
+        }
+        
+        // Parámetros adicionales en pila
+        if (paramCount > 4) {
+            for (int i = 4; i < paramCount; i++) {
+                String arg = paramQueue.get(i);
+                int offset = (i - 4) * 4;
+                if (arg.matches("-?\\d+")) {
+                    out.println("    li   $t0, " + arg);
+                    out.println("    sw   $t0, " + offset + "($sp)");
+                } else {
+                    out.println("    lw   $t0, " + arg);
+                    out.println("    sw   $t0, " + offset + "($sp)");
+                }
+            }
+        }
+        
+        out.println("    jal " + funcName);
+        
+        // Limpiar parámetros de la pila si los hubo
+        if (paramCount > 4) {
+            int stackSpace = (paramCount - 4) * 4;
+            out.println("    addiu $sp, $sp, " + stackSpace);
         }
     }
     private void handleCallPrintFloat() {
@@ -328,7 +430,7 @@ public class MipsGenerator {
             out.println("    # ERROR: printInt sin param");
             return;
         }
-        String arg = paramQueue.get(0); // sólo un parámetro
+        String arg = paramQueue.get(0);
         if (arg.matches("-?\\d+")) {
             out.println("    li   $a0, " + arg);
         } else {
@@ -344,11 +446,8 @@ public class MipsGenerator {
         String arg = paramQueue.get(0);
         String decl = dataDecls.get(arg);
         if (decl != null && decl.contains(".asciiz")) {
-            // Es una cadena literal: label directo
             out.println("    la   $a0, " + arg);
         } else {
-            // Es una variable string/puntero:
-            // str: .word 0, que en tiempo de ejecución tendrá la dirección del literal.
             out.println("    lw   $a0, " + arg);
         }
         out.println("    jal  printStr");
@@ -363,12 +462,34 @@ public class MipsGenerator {
         out.println("    lw   $t0, " + cond);
         out.println("    bne  $t0, $zero, " + label);  //escribimos en el archivo de salida
     }
+    private void handleParamAssignment(String left, String right) {
+        // Extraer índice del parámetro: param[0], param[1], etc.
+        int startIdx = right.indexOf('[') + 1;
+        int endIdx = right.indexOf(']');
+        int paramIndex = Integer.parseInt(right.substring(startIdx, endIdx));
+        
+        // Los primeros 4 parámetros vienen en $a0-$a3
+        if (paramIndex < 4) {
+            out.println("    sw   $a" + paramIndex + ", " + left);
+        } else {
+            // Parámetros adicionales vienen en la pila
+            // Cálculo: 8 (ra + fp) + (paramIndex - 4) * 4
+            int offset = 8 + (paramIndex - 4) * 4;
+            out.println("    lw   $t0, " + offset + "($fp)");
+            out.println("    sw   $t0, " + left);
+        }
+    }
     // Manejo de asignaciones y aritmetica
     private void handleAssign(String line) {
 
         int idxEq = line.indexOf('=');
         String left  = line.substring(0, idxEq).trim();
         String right = line.substring(idxEq + 1).trim();
+
+        if (right.startsWith("param[")) {
+            handleParamAssignment(left, right);
+            return;
+        }
 
         if (right.startsWith("call ")) {
             handleAssignFromCall(left, right);
@@ -481,10 +602,10 @@ public class MipsGenerator {
         int startName = right.indexOf("call") + 4;
         int par = right.indexOf('(', startName);
         String funcName = right.substring(startName, par).trim();
+        int cantidadParametros = Integer.parseInt(right.substring(right.lastIndexOf(',') + 1).trim());
 
         if (funcName.equals("readFloat")) {
             out.println("    jal  readFloat");
-            // usamos store word coprocessor 1 para el float que queda 
             out.println("    swc1 $f0, " + left);
             return;
         }
@@ -495,8 +616,48 @@ public class MipsGenerator {
             return;
         }
 
-        // funcion normal con retorno en $v0
+        // Para funciones de usuario que devuelven valores
+        if (!funcName.startsWith("print")) {
+            // Primero manejar los parámetros
+            int regParamCount = Math.min(paramQueue.size(), 4);
+            
+            for (int i = 0; i < regParamCount; i++) {
+                String arg = paramQueue.get(i);
+                if (arg.matches("-?\\d+")) {
+                    out.println("    li   $a" + i + ", " + arg);
+                } else {
+                    out.println("    lw   $a" + i + ", " + arg);
+                }
+            }
+            
+            // Parámetros adicionales en pila
+            if (paramQueue.size() > 4) {
+                for (int i = 4; i < paramQueue.size(); i++) {
+                    String arg = paramQueue.get(i);
+                    out.println("    addi $sp, $sp, -4");
+                    if (arg.matches("-?\\d+")) {
+                        out.println("    li   $t0, " + arg);
+                        out.println("    sw   $t0, 0($sp)");
+                    } else {
+                        out.println("    lw   $t0, " + arg);
+                        out.println("    sw   $t0, 0($sp)");
+                    }
+                }
+            }
+        }
+        
         out.println("    jal  " + funcName);
+        
+        // Limpiar pila si hubo parámetros adicionales
+        if (paramQueue.size() > 4) {
+            int stackParams = paramQueue.size() - 4;
+            out.println("    addi $sp, $sp, " + (stackParams * 4));
+        }
+        
+        // Guardar valor de retorno
         out.println("    sw   $v0, " + left);
+        
+        // Limpiar cola de parámetros
+        paramQueue.clear();
     }
 }
