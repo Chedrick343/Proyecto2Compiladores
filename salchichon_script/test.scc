@@ -1,7 +1,6 @@
-void suma є int numero1, int numero2, int numero3, int numero4, int numero5 э ¿
+int suma є int numero1, int numero2, int numero3, int numero4, int numero5 э ¿
 	let int sumacion = numero1 + numero2 + numero3 + numero4 + numero5$
-	output є sumacion э$
-	return$
+	return sumacion$
 ?
 float elemento є float numero э¿
 	return numero$
@@ -17,7 +16,32 @@ init void principal є  э  ¿
 	let float numeroFlotante = elemento є numeroF э$
 	output є numeroFlotante э$
 
-	suma є numEntero, 10, 10, 20, 10 э$
+	decide of	
+		є numEntero > 0 э -> ¿
+			output є "El numero es positivo" э$
+		?
+		є numeroF < 1.2 э -> ¿
+			output є "El numero es mayor a 1.2" э$
+		?
+		else -> ¿
+			output є "El numero es cero" э$
+		?
+	end decide$
+	
+	let int jaaa = 0$
+
+	loop
+		output є "Ciclo for de 0 a 10" э $
+		let int _i_$
+		for _i_ = 0 step 1 to 10 do  ¿ 
+			output є _i_ э$ 
+			jaaa = jaaa + 1$
+		?
+		exit when є jaaa > 2 э $
+	end loop$
+
+	let int x = suma є numEntero, 10, 10, 20, 10 э$
+	output є x э$
 	let string str = "hola mundo"$
 	output є str э$
 	return$

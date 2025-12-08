@@ -12,6 +12,20 @@ public class MipsGenerator {
 
     private final Map<String, String> dataDecls = new LinkedHashMap<>();
     private final List<String> paramQueue = new ArrayList<>();
+    private int labelCounter = 0;
+
+    private String newLabel(String base) {
+        return base + "_" + (labelCounter++);
+    }
+
+    private boolean isFloatTemp(String name) {
+        return name.matches("^f\\d+$");
+    }
+
+    private boolean isRelationalOp(String op) {
+        return op.equals(">") || op.equals("<") || op.equals(">=") || op.equals("<=");
+    }
+
 
     private boolean isTemp(String name) {
         return name.matches("^[tf]\\d+$");
@@ -233,50 +247,63 @@ public class MipsGenerator {
         out.println();
     }
 
+    private Set<String> detectFunctionLabels(List<String> lines) {
+        Set<String> fns = new HashSet<>();
+
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.endsWith(":")) {
+                String label = line.substring(0, line.length() - 1);
+                if (!label.contains("_")) {
+                    fns.add(label);
+                }
+            }
+        }
+        fns.add("principal");
+        return fns;
+    }
+
+
+
+
     // La segunda pasada ya es para generar el codigo MIPS
     // Aqui es donde ya se hace la logica y traduccion
     private void secondPass(List<String> lines) {
-        boolean inFunction = false;
         int linesCounter = -1;
         String currentFunction = "";
+
+        // calcular que etiquetas son funciones de verdad
+        Set<String> functionLabels = detectFunctionLabels(lines);
+
         for (String raw : lines) {
             linesCounter++;
             String line = raw.trim();
             if (line.isEmpty()) continue;
-            
 
-            // TO-DO: hay que hacer manejo de etiquetas, if-goto, parametros, llamadas a funciones.
-            // DID IT: Aquí escribimos en el archivo de salida las lineas que cumplen con lo que hay que hacer
-            if (line.endsWith(":") && !line.startsWith("principal") && !line.contains("_end")) {
-                inFunction = true;
-                currentFunction = line.substring(0, line.length() - 1);
-                out.println(line);
-                
-                // Prologo de función - espacio para guardar $ra y frame pointer
-                out.println("    addiu $sp, $sp, -8");
-                out.println("    sw    $ra, 4($sp)");
-                out.println("    sw    $fp, 0($sp)");
-                out.println("    move  $fp, $sp");
-                
-                // Reservar espacio para variables locales si es necesario
-                // Y cargar parámetros a variables temporales
-                handleFunctionPrologue(currentFunction);
-                continue;
-            }
-            
-            // Detectar fin de función
-            if (line.contains("_end:")) {
-                inFunction = false;
-                out.println(line);
-                continue;
-            }
-            if(line.startsWith("principal")){
-                out.println(line);
-                out.println("    add $sp, $sp, -8");
-                out.println("    sw $ra, 0($sp)");
-            }
-                if (line.endsWith(":") && !line.equals("principal:")) {
-                out.println(line);
+            // Manejo de etiquetas
+            if (line.endsWith(":")) {
+                String label = line.substring(0, line.length() - 1);
+
+                // Etiquetas *_end: sólo marcan final
+                if (label.endsWith("_end")) {
+                    out.println(line); 
+                    continue;
+                }
+
+                // Si es una funcion de verdad, devuelve el ra y ajusta stack
+                if (functionLabels.contains(label)) {
+                    currentFunction = label;
+                    out.println(line); 
+                                        out.println("    addiu $sp, $sp, -8");
+                    out.println("    sw    $ra, 4($sp)");
+                    out.println("    sw    $fp, 0($sp)");
+                    out.println("    move  $fp, $sp");
+                    
+                    handleFunctionPrologue(currentFunction);
+                } else {
+                    // CUALQUIER OTRA ETIQUETA es un bloque interno
+                    out.println(line);
+                }
                 continue;
             }
 
@@ -293,27 +320,16 @@ public class MipsGenerator {
             }
 
             if (line.startsWith("param ")) {    //si lo que se esta ingresando es un parametro
-                String arg = line.substring("param".length()).trim(); 
+                String arg = line.substring("param".length()).trim();
                 paramQueue.add(arg); //agregamos el parametro a la lista de parametros
                 continue;
             }
 
             if (line.startsWith("call ")) {
-                String lineaPrincipal = lines.get(linesCounter+2).trim();
-                System.out.println(lineaPrincipal);
-                if(lineaPrincipal.contains("principal_end")){
-                    out.println("    lw  $ra, 0($sp)");
-                    out.println("    addiu $sp, $sp, 8");
-                    out.println("    jr $ra"); 
-                }else{
-                    handleCall(line);
-                    out.println("    la $a0, nl");
-                    out.println("    jal printStr");
-                    continue;
-                }
+                handleCall(line);
+                continue;
             }
 
-            // Asignaciones
             if (line.contains("=")) {
                 handleAssign(line);
                 continue;
@@ -323,9 +339,11 @@ public class MipsGenerator {
             System.out.println("quesesto " + line);
         }
     }
+
     private void handleFunctionPrologue(String funcName) {
         out.println("    # Cargando parámetros para " + funcName);
     }
+
     private void handleCall(String line) {
         // Ej: "call printInt(), 1"
         System.out.println(line);
@@ -366,13 +384,23 @@ public class MipsGenerator {
         }
     }
     private void handleFunctionReturn() {
-        out.println("    # Epílogo de función");
+        if (!paramQueue.isEmpty()) {
+            String ret = paramQueue.get(0);
+
+            if (ret.matches("-?\\d+")) {
+                out.println("    li   $v0, " + ret);
+            } else {
+                out.println("    lw   $v0, " + ret);
+            }
+        }
+
         out.println("    move  $sp, $fp");
         out.println("    lw    $ra, 4($sp)");
         out.println("    lw    $fp, 0($sp)");
         out.println("    addiu $sp, $sp, 8");
         out.println("    jr    $ra");
     }
+
     private void handleUserFunctionCall(String funcName, int paramCount) {
         // Para funciones con más de 4 parámetros, necesitamos ajustar
         // la pila antes de llamar
@@ -424,20 +452,29 @@ public class MipsGenerator {
         String arg = paramQueue.get(0);
         out.println("    lwc1 $f12, " + arg);
         out.println("    jal  printFloat");
+
+        out.println("    la   $a0, nl");
+        out.println("    jal  printStr");
     }
+
     private void handleCallPrintInt() {
         if (paramQueue.isEmpty()) {
             out.println("    # ERROR: printInt sin param");
             return;
         }
         String arg = paramQueue.get(0);
+
         if (arg.matches("-?\\d+")) {
             out.println("    li   $a0, " + arg);
         } else {
             out.println("    lw   $a0, " + arg);
         }
         out.println("    jal  printInt");
+
+        out.println("    la   $a0, nl");
+        out.println("    jal  printStr");
     }
+
     private void handleCallPrintStr() {
         if (paramQueue.isEmpty()) {
             out.println("    # ERROR: printStr sin param");
@@ -445,13 +482,18 @@ public class MipsGenerator {
         }
         String arg = paramQueue.get(0);
         String decl = dataDecls.get(arg);
+
         if (decl != null && decl.contains(".asciiz")) {
             out.println("    la   $a0, " + arg);
         } else {
             out.println("    lw   $a0, " + arg);
         }
         out.println("    jal  printStr");
+
+        out.println("    la   $a0, nl");
+        out.println("    jal  printStr");
     }
+
     private void handleIfGoto(String line) {
         //esperamos encontrar algo como if condicion goto etiqueta
         //entonces hacemos un split
@@ -518,12 +560,18 @@ public class MipsGenerator {
         }
 
         // manejo de operaciones de dos operandos
-        // No maneja floats aun
         String[] parts = right.split("\\s+");
         if (parts.length == 3) {
             String op1 = parts[0];
             String op  = parts[1];
             String op2 = parts[2];
+
+            boolean isFloatCmp = (isFloatTemp(op1) || isFloatTemp(op2)) && isRelationalOp(op);
+
+            if (isFloatCmp) {
+                genFloatRelational(left, op1, op, op2);
+                return;
+            }
 
             loadIntLike("$t0", op1);
             loadIntLike("$t1", op2);
@@ -552,9 +600,16 @@ public class MipsGenerator {
                 case "<":
                     genRelational("slt", left);
                     return;
-
-                // TO-DO: completar con más operadores (>=, <=, ==, !=, &&, || y manejo de floats)
-                // IMPORTANTE
+                case ">=":
+                    out.println("    slt  $t2, $t0, $t1");
+                    out.println("    xori $t2, $t2, 1");
+                    out.println("    sw   $t2, " + left);
+                    return;
+                case "<=":
+                    out.println("    sgt  $t2, $t0, $t1");
+                    out.println("    xori $t2, $t2, 1");
+                    out.println("    sw   $t2, " + left);
+                    return;
 
                 default:
                     out.println("    move $t2, $t0");
@@ -596,6 +651,68 @@ public class MipsGenerator {
         out.println("    " + mipsInstr + "  $t2, $t0, $t1");
         out.println("    sw   $t2, " + left);
     }
+
+    // Comparaciones de floats usando c.lt.s y bc1t
+    private void genFloatRelational(String left, String op1, String op, String op2) {
+        // Generamos etiquetas unicas para cada comparación
+        String Ltrue  = newLabel("Ltrue");
+        String Lfalse = newLabel("Lfalse");
+        String Lend   = newLabel("Lend");
+
+        // Cargar operandos en $f0 y $f1
+        out.println("    lwc1 $f0, " + op1);
+        out.println("    lwc1 $f1, " + op2);
+
+        switch (op) {
+            case "<":
+                out.println("    c.lt.s $f0, $f1");
+                out.println("    bc1t " + Ltrue);
+                out.println("    li   $t2, 0");
+                out.println("    j    " + Lend);
+                out.println(Ltrue + ":");
+                out.println("    li   $t2, 1");
+                out.println(Lend + ":");
+                break;
+
+            case ">":
+                out.println("    c.lt.s $f1, $f0");
+                out.println("    bc1t " + Ltrue);
+                out.println("    li   $t2, 0");
+                out.println("    j    " + Lend);
+                out.println(Ltrue + ":");
+                out.println("    li   $t2, 1");
+                out.println(Lend + ":");
+                break;
+
+            case ">=":
+                out.println("    c.lt.s $f0, $f1");
+                out.println("    bc1t " + Lfalse);
+                out.println("    li   $t2, 1");
+                out.println("    j    " + Lend);
+                out.println(Lfalse + ":");
+                out.println("    li   $t2, 0");
+                out.println(Lend + ":");
+                break;
+
+            case "<=":
+                out.println("    c.lt.s $f1, $f0");
+                out.println("    bc1t " + Lfalse);
+                out.println("    li   $t2, 1");
+                out.println("    j    " + Lend);
+                out.println(Lfalse + ":");
+                out.println("    li   $t2, 0");
+                out.println(Lend + ":");
+                break;
+
+            default:
+                out.println("    # TODO: op flotante no soportado: " + op);
+                out.println("    li   $t2, 0");
+        }
+
+        // Guardamos el bool 0/1 en left
+        out.println("    sw   $t2, " + left);
+    }
+
 
     // Manejo de asignaciones desde llamadas a funciones
     private void handleAssignFromCall(String left, String right) {
