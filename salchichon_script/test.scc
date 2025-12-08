@@ -11,6 +11,11 @@ init void principal є  э  ¿
 	let int numEntero$
 	output є "Ingrese un numero entero: " э$
 	input є numEntero э$
+	output є "Ingrese un numero flotante: " э$
+	let float numeroF$
+	input є numeroF э$
+	let float numeroFlotante = elemento є numeroF э$
+	output є numeroFlotante э$
 
 	suma є numEntero, 10, 10, 20, 10 э$
 	let string str = "hola mundo"$
